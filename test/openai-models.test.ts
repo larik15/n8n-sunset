@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildModelIndex, matchModelId } from '../src/rules/openai.js';
 import { AS_OF, byNode, registry, scanFixture } from './helpers.js';
 
-const OPENAI_URL = 'https://platform.openai.com/docs/deprecations';
+const OPENAI_URL = 'https://developers.openai.com/api/docs/deprecations';
 
 describe('matchModelId', () => {
   const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
@@ -239,7 +239,7 @@ describe('model ID formats', () => {
       replacement: 'Fine-tune a current base model with /v1/fine_tuning/jobs',
     });
     expect(finding!.sources).toEqual([
-      'https://platform.openai.com/docs/deprecations',
+      'https://developers.openai.com/api/docs/deprecations',
       'https://github.com/openai/openai-cookbook/blob/2182005bcaf5a5cdd96bb46fb9995d08730e7b91/examples/fine-tuned_qa/olympics-3-train-qa.ipynb',
     ]);
     expect(byNode(result, 'Legacy fine-tune over HTTP')).toMatchObject([{ model: 'davinci:ft-personal-2022-01-01-00-00-00', severity: 'breaking' }]);

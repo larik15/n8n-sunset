@@ -13,7 +13,18 @@ describe('sunset registry', () => {
       expect(isIsoDay(source.accessed), key).toBe(true);
     }
     expect(registry.sources['n8n-v3-breaking-changes']!.url).toBe('https://docs.n8n.io/changelog/v30-breaking-changes');
-    expect(registry.sources['openai-deprecations']!.url).toBe('https://platform.openai.com/docs/deprecations');
+    expect(registry.sources['openai-deprecations']).toMatchObject({
+      url: 'https://developers.openai.com/api/docs/deprecations',
+      previousUrl: 'https://platform.openai.com/docs/deprecations',
+    });
+  });
+
+  it('pins every GitHub link to a commit', () => {
+    for (const [key, source] of Object.entries(registry.sources)) {
+      for (const url of [source.url, source.repoUrl].filter((u): u is string => Boolean(u?.startsWith('https://github.com/')))) {
+        expect(url, key).toMatch(/^https:\/\/github\.com\/[^/]+\/[^/]+\/(tree|blob)\/[0-9a-f]{40}(\/|$)/);
+      }
+    }
   });
 
   it('only references sources it defines', () => {

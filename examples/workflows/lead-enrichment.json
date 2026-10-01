@@ -1,0 +1,60 @@
+{
+  "id": "Lp4Nv8LeadEnrich",
+  "name": "Lead enrichment",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } },
+      "id": "8c2d4e6f-2b1a-4d3c-8e5f-1a2b3c4d5e01",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4\",\n  \"messages\": [{ \"role\": \"user\", \"content\": \"Score this lead from 1 to 10: {{ $json.company }}\" }]\n}",
+        "options": {}
+      },
+      "id": "8c2d4e6f-2b1a-4d3c-8e5f-1a2b3c4d5e02",
+      "name": "Score lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0],
+      "credentials": { "openAiApi": { "id": "Qw3rTy", "name": "OpenAI account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const summary = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://api.openai.com/v1/responses',\n  headers: { Authorization: `Bearer ${$env.OPENAI_API_KEY}` },\n  body: { prompt: { id: 'pmpt_68d1lead0summary', variables: { company: $json.company } } },\n  json: true,\n});\nreturn [{ json: { ...$json, summary: summary.output_text } }];"
+      },
+      "id": "8c2d4e6f-2b1a-4d3c-8e5f-1a2b3c4d5e03",
+      "name": "Summarize lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.filter(item => Number(item.json.score) >= 7);"
+      },
+      "id": "8c2d4e6f-2b1a-4d3c-8e5f-1a2b3c4d5e04",
+      "name": "Keep hot leads",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Every hour": { "main": [[{ "node": "Score lead", "type": "main", "index": 0 }]] },
+    "Score lead": { "main": [[{ "node": "Summarize lead", "type": "main", "index": 0 }]] },
+    "Summarize lead": { "main": [[{ "node": "Keep hot leads", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

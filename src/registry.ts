@@ -9,7 +9,7 @@ export interface SourceRef {
   title: string;
   url: string;
   repoUrl?: string;
-  resolvedUrl?: string;
+  previousUrl?: string;
   accessed: string;
 }
 

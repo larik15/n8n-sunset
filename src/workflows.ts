@@ -103,6 +103,9 @@ export function readWorkflows(json: unknown, file: string): { workflows: Workflo
     shape = isObject(json) ? 'JSON object without a "nodes" array' : `JSON ${json === null ? 'null' : typeof json}, not an object`;
   }
 
+  // An empty API page ({ "data": [], "nextCursor": null }) is a valid answer from an instance with no workflows.
+  if (isObject(json) && Array.isArray(json.data) && json.data.length === 0) return { workflows: [] };
+
   const found = candidates.map(unwrap).filter((w) => w !== undefined);
   const workflows = found.map(({ meta, body }, index) => ({
     name: typeof meta.name === 'string' && meta.name.trim() ? meta.name : found.length > 1 ? `${basename(file)} #${index + 1}` : basename(file),

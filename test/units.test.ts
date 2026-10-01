@@ -74,7 +74,9 @@ describe('readWorkflows', () => {
     expect(readWorkflows({ name: 'pkg' }, 'p.json').reason).toBe('JSON object without a "nodes" array');
     expect(readWorkflows([], 'p.json').reason).toBe('empty array');
     expect(readWorkflows([1, 2], 'p.json').reason).toBe('array without n8n workflows');
-    expect(readWorkflows({ data: [] }, 'p.json').reason).toBe('API page ("data") without n8n workflows');
+    expect(readWorkflows({ data: [{ id: 1 }] }, 'p.json').reason).toBe('API page ("data") without n8n workflows');
+    // An empty API page is what an instance with no workflows returns, so it is not a skipped file.
+    expect(readWorkflows({ data: [], nextCursor: null }, 'p.json')).toEqual({ workflows: [] });
     expect(readWorkflows('text', 'p.json').reason).toBe('JSON string, not an object');
     expect(readWorkflows(wf, 'w.json').reason).toBeUndefined();
   });

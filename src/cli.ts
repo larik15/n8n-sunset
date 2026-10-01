@@ -18,9 +18,11 @@ const SUPPORTED_TARGETS = ['3.0'];
 
 const HELP = `Usage: n8n-sunset <path...> [options]
 
-Scan n8n workflow exports (folders of JSON files, or single files) for OpenAI
-models and endpoints that are being shut down, and for nodes removed or
-changed in n8n 3.0.
+Scan n8n workflow exports (folders of JSON files, or single files) for:
+  - OpenAI models being shut down (gpt-4, gpt-3.5-turbo, o1-mini, ...)
+  - OpenAI endpoints being shut down (Assistants API, Videos API, reusable
+    prompt objects, Evals API, OpenAI-Beta headers, legacy /v1 endpoints)
+  - nodes removed or changed in n8n 3.0 (these apply when you upgrade)
 
 Options:
   --json             Print a JSON report instead of the table (errors too)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { byNode, scanFixture } from './helpers.js';
 
-const OPENAI_URL = 'https://platform.openai.com/docs/deprecations';
+const OPENAI_URL = 'https://developers.openai.com/api/docs/deprecations';
 const endpointFindings = (result: ReturnType<typeof scanFixture>, node: string) =>
   byNode(result, node).filter((f) => f.ruleId === 'openai/endpoint-shutdown');
 
@@ -80,7 +80,7 @@ describe('HTTP Request nodes calling deprecated OpenAI endpoints', () => {
 
 describe('n8n OpenAI node, "Assistant" resource', () => {
   const result = scanFixture('rules/openai-node-assistant.json');
-  const N8N_OPENAI_NODE = 'https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi';
+  const N8N_OPENAI_NODE = 'https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi';
 
   it('flags the default "Message an Assistant" operation, which calls /v1/threads', () => {
     const findings = endpointFindings(result, 'Ask support assistant');
@@ -100,7 +100,7 @@ describe('n8n OpenAI node, "Assistant" resource', () => {
     expect(findings[0]!.message).toBe(
       'OpenAI has shut down the Assistants API (/v1/threads), which this node\'s "Message an Assistant" operation calls; calls fail.',
     );
-    expect(findings[0]!.sources).toEqual(expect.arrayContaining(['https://platform.openai.com/docs/deprecations', N8N_OPENAI_NODE]));
+    expect(findings[0]!.sources).toEqual(expect.arrayContaining(['https://developers.openai.com/api/docs/deprecations', N8N_OPENAI_NODE]));
   });
 
   it('maps other operations to /v1/assistants, including nodes without a typeVersion', () => {
@@ -171,7 +171,7 @@ describe('OpenAI Assistant node', () => {
     );
     expect(finding!.sources).toEqual(
       expect.arrayContaining([
-        'https://github.com/n8n-io/n8n/blob/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts',
+        'https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts',
         'https://github.com/langchain-ai/langchainjs/blob/6b914bceb4acd4664b12091770a2ddcbf5d8457e/libs/langchain-classic/src/experimental/openai_assistant/index.ts',
       ]),
     );

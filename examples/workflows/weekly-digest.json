@@ -1,0 +1,38 @@
+{
+  "id": "Wd6Qs1WeeklyDig",
+  "name": "Weekly digest",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": { "triggerTimes": { "item": [{ "mode": "everyWeek", "hour": 8, "weekday": "1" }] } },
+      "id": "3e5f7a9b-4c2d-4e1f-9a8b-2c3d4e5f6a01",
+      "name": "Monday 8am",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "agent": "conversationalAgent", "text": "Write this week's digest from the attached notes.", "options": {} },
+      "id": "3e5f7a9b-4c2d-4e1f-9a8b-2c3d4e5f6a02",
+      "name": "Digest agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [240, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "o1-mini", "mode": "list", "cachedResultName": "o1-mini" }, "options": {} },
+      "id": "3e5f7a9b-4c2d-4e1f-9a8b-2c3d4e5f6a03",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [240, 220],
+      "credentials": { "openAiApi": { "id": "Qw3rTy", "name": "OpenAI account" } }
+    }
+  ],
+  "connections": {
+    "Monday 8am": { "main": [[{ "node": "Digest agent", "type": "main", "index": 0 }]] },
+    "OpenAI Chat Model": { "ai_languageModel": [[{ "node": "Digest agent", "type": "ai_languageModel", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

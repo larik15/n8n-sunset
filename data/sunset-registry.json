@@ -5,23 +5,23 @@
     "n8n-v3-breaking-changes": {
       "title": "n8n 3.0 breaking changes",
       "url": "https://docs.n8n.io/changelog/v30-breaking-changes",
-      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/068947f7115ea1785b8539742683268137829bb9/docs/changelog/v30-breaking-changes.md",
+      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/49668e57cd44ee74931c735366b19d7e2725d8fa/docs/changelog/v30-breaking-changes.md",
       "accessed": "2026-10-01"
     },
     "n8n-deprecated-nodes": {
       "title": "n8n deprecated and versioned nodes",
       "url": "https://docs.n8n.io/integrations/builtin/deprecated-nodes",
-      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/main/docs/integrations/builtin/deprecated-nodes.md",
+      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/49668e57cd44ee74931c735366b19d7e2725d8fa/docs/integrations/builtin/deprecated-nodes.md",
       "accessed": "2026-10-01"
     },
     "n8n-source": {
-      "title": "n8n source at n8n@2.41.5 (node type names, versions, parameter values)",
-      "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages",
+      "title": "n8n source at tag n8n@2.41.5, commit a9c858b4 (node type names, versions, parameter values)",
+      "url": "https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages",
       "accessed": "2026-10-01"
     },
     "n8n-openai-node": {
       "title": "n8n OpenAI node source at n8n@2.41.5 (version map in OpenAi.node.ts; Assistant resource in v1/OpenAiV1.node.ts and v1/actions/assistant/; Video resource in v2/OpenAiV2.node.ts and v2/actions/video/)",
-      "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
+      "url": "https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
       "accessed": "2026-10-01"
     },
     "openai-prompts-migration": {
@@ -36,7 +36,7 @@
     },
     "n8n-openai-assistant-node": {
       "title": "n8n OpenAI Assistant node source at n8n@2.41.5 (versions, the \"mode\" parameter, and its Assistants API calls)",
-      "url": "https://github.com/n8n-io/n8n/blob/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts",
       "accessed": "2026-10-01"
     },
     "langchain-openai-assistant": {
@@ -51,8 +51,8 @@
     },
     "openai-deprecations": {
       "title": "OpenAI API deprecations",
-      "url": "https://platform.openai.com/docs/deprecations",
-      "resolvedUrl": "https://developers.openai.com/api/docs/deprecations",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "previousUrl": "https://platform.openai.com/docs/deprecations",
       "accessed": "2026-10-01"
     },
     "openai-openapi": {
