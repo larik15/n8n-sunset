@@ -116,6 +116,8 @@ export interface LegacyFineTunes {
   note: string;
   verification: Verification;
   sources: string[];
+  /** IDs created with a custom suffix: ada:ft-your-org:custom-model-name-2022-02-15-04-21-04. */
+  suffixForm?: { verification: Verification; verificationNote: string; sources: string[] };
 }
 
 export interface Registry {
@@ -147,8 +149,39 @@ export interface Registry {
 
 const DEFAULT_REGISTRY_URL = new URL('../data/sunset-registry.json', import.meta.url);
 
+/** Every source key the registry refers to. */
+function referencedSources(registry: Registry): string[] {
+  const { n8n, openai } = registry;
+  return [
+    ...n8n.release.sources,
+    ...n8n.removedNodes.flatMap((n) => n.sources),
+    ...n8n.changes.flatMap((c) => c.sources),
+    openai.source,
+    ...openai.legacyFineTunes.sources,
+    ...(openai.legacyFineTunes.suffixForm?.sources ?? []),
+    ...openai.endpoints.flatMap((e) => [...e.sources, ...(e.nodeUsages ?? []).flatMap((u) => u.sources)]),
+  ];
+}
+
+/** Throws when the registry is missing a section or refers to a source it doesn't define. */
+export function validateRegistry(registry: Registry): Registry {
+  if (!registry?.sources || !registry.n8n?.release || !registry.openai?.models || !registry.openai.endpoints || !registry.openai.legacyFineTunes) {
+    throw new Error('Registry is missing required sections (sources, n8n, openai)');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(registry.registryVersion)) throw new Error(`Registry has an invalid registryVersion "${registry.registryVersion}"`);
+  const unknown = [...new Set(referencedSources(registry).filter((key) => !registry.sources[key]))];
+  if (unknown.length) throw new Error(`Registry references unknown source${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`);
+  return registry;
+}
+
 export function loadRegistry(path: string | URL = DEFAULT_REGISTRY_URL): Registry {
-  return JSON.parse(readFileSync(path, 'utf8')) as Registry;
+  let json: unknown;
+  try {
+    json = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    throw new Error(`Could not read registry ${String(path)}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return validateRegistry(json as Registry);
 }
 
 export function sourceUrls(registry: Registry, keys: string[]): string[] {

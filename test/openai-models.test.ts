@@ -45,7 +45,7 @@ describe('matchModelId', () => {
 describe('OpenAI LLM nodes', () => {
   const result = scanFixture('rules/openai-llm-nodes.json');
 
-  it('flags an alias once, listing every place it appears', () => {
+  it('flags an alias once, from the resource locator value only', () => {
     const findings = byNode(result, 'GPT-4 chat model');
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({
@@ -63,7 +63,8 @@ describe('OpenAI LLM nodes', () => {
       replacement: 'gpt-5.6-sol',
       verification: 'verified',
       sources: [OPENAI_URL],
-      locations: ['OpenAI node parameter: model.value', 'OpenAI node parameter: model.cachedResultName'],
+      // Only the resource locator's value counts; cachedResultName is the editor's display copy.
+      locations: ['OpenAI node parameter: model.value'],
     });
     expect(findings[0]!.message).toBe('OpenAI shuts down model "gpt-4" (alias of gpt-4-0613); API calls will fail.');
   });
@@ -254,5 +255,52 @@ describe('workflow and node flags', () => {
       { model: 'gpt-4', severity: 'breaking', nodeDisabled: true, countsTowardExit: false, workflowActive: false, workflowArchived: true },
     ]);
     expect(result.summary.exitFindings).toBe(0);
+  });
+});
+
+describe('resource locators', () => {
+  const result = scanFixture('rules/resource-locators.json');
+
+  it('reads only the value, not the cached display name or URL', () => {
+    expect(byNode(result, 'Model changed, stale cache')).toEqual([]);
+    expect(byNode(result, 'Deprecated value')).toMatchObject([{ model: 'gpt-4', locations: ['OpenAI node parameter: model.value'] }]);
+  });
+});
+
+describe('HTTP Request versions 1 and 2', () => {
+  const result = scanFixture('rules/http-request-v1-v2.json');
+  const models = (node: string) => byNode(result, node).filter((f) => f.ruleId === 'openai/model-shutdown');
+
+  it('reads quoted IDs in bodyParametersJson', () => {
+    expect(models('v1 JSON body')).toMatchObject([{ model: 'gpt-4', locations: ['HTTP Request to api.openai.com: bodyParametersJson'] }]);
+  });
+
+  it('reads model pairs in bodyParametersUi and queryParametersUi', () => {
+    expect(models('v2 body list')).toMatchObject([{ model: 'o3-mini', locations: ['HTTP Request to api.openai.com: bodyParametersUi.parameter[0].value'] }]);
+    expect(models('v1 query list')).toMatchObject([{ model: 'gpt-4o-realtime-preview' }]);
+  });
+
+  it('does not read model IDs from headers', () => {
+    expect(byNode(result, 'v1 model ID in a header')).toEqual([]);
+  });
+});
+
+describe('legacy fine-tunes with a custom suffix', () => {
+  const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
+
+  it('matches the documented {base}:ft-{org}:{suffix}-{timestamp} form', () => {
+    expect(matchModelId('ada:ft-your-org:custom-model-name-2022-02-15-04-21-04', index)).toMatchObject({ kind: 'legacy-fine-tune', suffix: true });
+    expect(matchModelId('curie:ft-acme-2021-08-23-17-54-10', index)).not.toHaveProperty('suffix');
+    expect(matchModelId('ada:ft-your-org:custom:extra', index)).toBeUndefined();
+  });
+
+  it('reports it as unverified, citing openai-python for the format', () => {
+    const [finding] = byNode(scanFixture('rules/openai-id-formats.json'), 'Legacy fine-tune with suffix');
+    expect(finding).toMatchObject({ severity: 'breaking', verification: 'unverified', date: '2024-01-04' });
+    expect(finding!.verificationNote).toContain('{base_model}:ft-{org-title}:{suffix}-{timestamp}');
+    expect(finding!.sources).toEqual([
+      'https://developers.openai.com/api/docs/deprecations',
+      'https://github.com/openai/openai-python/blob/f7ccce126325ea35b6e5224ab954652c97a74896/openai/cli.py',
+    ]);
   });
 });

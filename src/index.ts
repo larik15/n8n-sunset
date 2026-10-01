@@ -1,7 +1,7 @@
-export { colorEnabled, main } from './cli.js';
+export { colorEnabled, main, normalizeTarget } from './cli.js';
 export { daysBetween, utcToday } from './dates.js';
 export type { Category, Finding, RuleFinding, Status, Trigger } from './findings.js';
-export { loadRegistry } from './registry.js';
+export { loadRegistry, validateRegistry } from './registry.js';
 export type { LegacyFineTunes, NodeChange, OpenAiEndpoint, OpenAiModel, Registry, RemovedNode, Severity, Verification } from './registry.js';
 export { makeColors, renderTable, toJsonReport } from './report.js';
 export { buildModelIndex, matchModelId } from './rules/openai.js';
@@ -10,3 +10,5 @@ export type { ScanOptions, ScanResult, ScanSummary } from './scan.js';
 export { displayWidth, wrap } from './width.js';
 export { loadWorkflows, readWorkflows } from './workflows.js';
 export type { LoadResult, SkippedFile, Workflow, WorkflowNode } from './workflows.js';
+export { API_PAGE_LIMIT, apiBase, loadWorkflowsFromApi } from './api.js';
+export type { ApiOptions } from './api.js';

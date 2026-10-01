@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isIsoDay } from '../src/dates.js';
+import { validateRegistry } from '../src/registry.js';
 import { DETECTORS } from '../src/rules/n8n.js';
 import { registry } from './helpers.js';
 
@@ -119,5 +120,36 @@ describe('sunset registry', () => {
   it('keeps aliases with their snapshot, as the official page lists them', () => {
     const gpt35 = registry.openai.models.find((m) => m.id === 'gpt-3.5-turbo-0125');
     expect(gpt35).toMatchObject({ aliases: ['gpt-3.5-turbo', 'gpt-3.5-turbo-completions'], shutdownDate: '2026-10-23', replacement: 'gpt-5.6-terra' });
+  });
+});
+
+describe('validateRegistry', () => {
+  const copy = () => JSON.parse(JSON.stringify(registry)) as typeof registry;
+
+  it('accepts the bundled registry', () => {
+    expect(() => validateRegistry(copy())).not.toThrow();
+  });
+
+  it('throws on a source key that is not defined, wherever it is used', () => {
+    const inChange = copy();
+    inChange.n8n.changes[0]!.sources.push('missing-a');
+    expect(() => validateRegistry(inChange)).toThrow('Registry references unknown source: missing-a');
+
+    const inLegacy = copy();
+    inLegacy.openai.legacyFineTunes.suffixForm!.sources.push('missing-b');
+    expect(() => validateRegistry(inLegacy)).toThrow('missing-b');
+
+    const inUsage = copy();
+    inUsage.openai.endpoints[0]!.nodeUsages![0]!.sources = ['missing-c', 'missing-d'];
+    expect(() => validateRegistry(inUsage)).toThrow('Registry references unknown sources: missing-c, missing-d');
+  });
+
+  it('throws when a section is missing or the version is not a date', () => {
+    const noEndpoints = copy() as unknown as { openai: { endpoints?: unknown } };
+    delete noEndpoints.openai.endpoints;
+    expect(() => validateRegistry(noEndpoints as never)).toThrow('missing required sections');
+    const badVersion = copy();
+    badVersion.registryVersion = 'October';
+    expect(() => validateRegistry(badVersion)).toThrow('invalid registryVersion');
   });
 });

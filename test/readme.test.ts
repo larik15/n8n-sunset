@@ -14,9 +14,9 @@ function example(name: string): { args: string[]; pipe?: string; output: string 
   return { args: m[1]!.split(' '), pipe: m[2], output: rest.join('\n').replace(/^\n/, '') };
 }
 
-function run(args: string[], columns: number) {
+async function run(args: string[], columns: number) {
   let stdout = '';
-  const code = main(args, {
+  const code = await main(args, {
     stdout: { write: (text: string) => (stdout += text), isTTY: false, columns },
     stderr: { write: () => undefined },
     cwd: process.cwd(),
@@ -27,17 +27,17 @@ function run(args: string[], columns: number) {
 }
 
 describe('README examples', () => {
-  it('shows the real table output for the example workflows (100 columns)', () => {
+  it("shows the real table output for the example workflows (100 columns)", async () => {
     const { args, output } = example('example-table');
-    const { code, stdout } = run(args, 100);
+    const { code, stdout } = await run(args, 100);
     expect(code).toBe(1);
     expect(output).toBe(stdout.replace(/\n$/, ''));
   });
 
-  it('shows the real JSON output, selected the way the jq filter in the README does', () => {
+  it("shows the real JSON output, selected the way the jq filter in the README does", async () => {
     const { args, pipe, output } = example('example-json');
     expect(pipe).toBe("jq '{exitCode, summary, firstFinding: .findings[0]}'");
-    const report = JSON.parse(run(args, 100).stdout);
+    const report = JSON.parse((await run(args, 100)).stdout);
     const selected = { exitCode: report.exitCode, summary: report.summary, firstFinding: report.findings[0] };
     expect(output).toBe(JSON.stringify(selected, null, 2));
   });

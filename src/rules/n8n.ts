@@ -29,6 +29,10 @@ export const DETECTORS: Record<string, Detector> = {
   'ai-agent-v1': (node, change) =>
     appliesTo(change, node) && version(node) < 2 ? { detail: `typeVersion ${version(node)}` } : null,
 
+  // The mode defaults to "once" (Run once with all items), so only an explicit "each" is affected.
+  'execute-workflow-each-mode': (node, change) =>
+    appliesTo(change, node) && params(node).mode === 'each' ? { detail: 'mode: each' } : null,
+
   'execute-workflow-source': (node, change) => {
     const source = params(node).source;
     return appliesTo(change, node) && (source === 'localFile' || source === 'url') ? { detail: `source: ${source}` } : null;

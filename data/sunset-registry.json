@@ -44,6 +44,16 @@
       "url": "https://github.com/langchain-ai/langchainjs/blob/6b914bceb4acd4664b12091770a2ddcbf5d8457e/libs/langchain-classic/src/experimental/openai_assistant/index.ts",
       "accessed": "2026-10-01"
     },
+    "n8n-migration-report": {
+      "title": "n8n's Migration Report (breaking-changes module) at n8n@2.41.5: its v3 rules, and the breakingChanges:list scope that only global owners and admins have",
+      "url": "https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/cli/src/modules/breaking-changes",
+      "accessed": "2026-10-02"
+    },
+    "openai-python-legacy-ft": {
+      "title": "openai-python v0.28.1 CLI: legacy fine-tuned model names have the form {base_model}:ft-{org-title}:{suffix}-{timestamp} when a suffix is set",
+      "url": "https://github.com/openai/openai-python/blob/f7ccce126325ea35b6e5224ab954652c97a74896/openai/cli.py",
+      "accessed": "2026-10-02"
+    },
     "n8n-3x-branch": {
       "title": "n8n 3.x branch (removed nodes are absent from its node manifests)",
       "url": "https://github.com/n8n-io/n8n/tree/599ca716ee91b06d8f2026d432f8a09a9953f0a8",
@@ -550,6 +560,23 @@
         "sources": [
           "n8n-v3-breaking-changes",
           "n8n-source"
+        ]
+      },
+      {
+        "id": "execute-workflow-each-mode",
+        "title": "Execute Sub-workflow: \"Run once for each item\" mode removed",
+        "nodeTypes": [
+          "n8n-nodes-base.executeWorkflow"
+        ],
+        "severity": "breaking",
+        "message": "The \"Run once for each item\" mode of the Execute Sub-workflow node is no longer available in n8n 3.0, so the node fails.",
+        "replacement": "Add a Loop Over Items node before a new Execute Sub-workflow node set to \"Run once with all items\".",
+        "note": "Not listed on the n8n 3.0 breaking changes page (checked 2026-10-02). n8n's own Migration Report has a v3 rule for it (execute-workflow-each-mode-v3), n8n@2.41.5 marks the mode deprecated, and on the 3.x branch the node says the mode \"is no longer available, so this node will fail\".",
+        "verification": "verified",
+        "sources": [
+          "n8n-migration-report",
+          "n8n-source",
+          "n8n-3x-branch"
         ]
       },
       {
@@ -1634,7 +1661,15 @@
       "sources": [
         "openai-deprecations",
         "openai-cookbook-legacy-ft"
-      ]
+      ],
+      "suffixForm": {
+        "verification": "unverified",
+        "verificationNote": "Legacy fine-tune ID with a custom suffix ({base_model}:ft-{org-title}:{suffix}-{timestamp}). openai-python v0.28.1 documents this form; it is reported as unverified because the deprecations page does not show it.",
+        "sources": [
+          "openai-deprecations",
+          "openai-python-legacy-ft"
+        ]
+      }
     },
     "endpoints": [
       {
@@ -1925,7 +1960,7 @@
           "/v1/search"
         ],
         "shutdownDate": "2022-12-03",
-        "replacement": "See the search transition guide: https://help.openai.com/en/articles/6272952-search-transition-guide",
+        "replacement": "OpenAI says \"View transition guide\", but the help article it links (search transition guide) no longer exists (404, checked 2026-10-02)",
         "announcement": "2022-06-03: Legacy endpoints",
         "sources": [
           "openai-deprecations"
@@ -1939,7 +1974,7 @@
           "/v1/classifications"
         ],
         "shutdownDate": "2022-12-03",
-        "replacement": "See the classifications transition guide: https://help.openai.com/en/articles/6272941-classifications-transition-guide",
+        "replacement": "OpenAI says \"View transition guide\", but the help article it links (classifications transition guide) no longer exists (404, checked 2026-10-02)",
         "announcement": "2022-06-03: Legacy endpoints",
         "sources": [
           "openai-deprecations"
@@ -1953,7 +1988,7 @@
           "/v1/answers"
         ],
         "shutdownDate": "2022-12-03",
-        "replacement": "See the answers transition guide: https://help.openai.com/en/articles/6233728-answers-transition-guide",
+        "replacement": "OpenAI says \"View transition guide\", but the help article it links (answers transition guide) no longer exists (404, checked 2026-10-02)",
         "announcement": "2022-06-03: Legacy endpoints",
         "sources": [
           "openai-deprecations"

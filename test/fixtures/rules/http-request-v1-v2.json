@@ -1,0 +1,98 @@
+{
+  "id": "wf-http-v1-v2",
+  "name": "Old HTTP Request nodes",
+  "nodes": [
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={ \"model\": \"gpt-4\", \"messages\": {{ JSON.stringify($json.messages) }} }"
+      },
+      "id": "1",
+      "name": "v1 JSON body",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "options": {},
+        "bodyParametersUi": { "parameter": [{ "name": "model", "value": "o3-mini" }, { "name": "input", "value": "hi" }] }
+      },
+      "id": "2",
+      "name": "v2 body list",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/realtime",
+        "options": {},
+        "queryParametersUi": { "parameter": [{ "name": "model", "value": "gpt-4o-realtime-preview" }] }
+      },
+      "id": "3",
+      "name": "v1 query list",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/assistants",
+        "options": {},
+        "headerParametersUi": { "parameter": [{ "name": "OpenAI-Beta", "value": "assistants=v1" }] }
+      },
+      "id": "4",
+      "name": "v1 header list",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.openai.com/v1/realtime/sessions",
+        "jsonParameters": true,
+        "options": {},
+        "headerParametersJson": "{ \"OpenAI-Beta\": \"realtime=v1\" }"
+      },
+      "id": "5",
+      "name": "v2 header JSON",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{ \"prompt\": { \"id\": \"pmpt_v2body\" } }"
+      },
+      "id": "6",
+      "name": "v2 prompt object",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/models",
+        "options": {},
+        "headerParametersUi": { "parameter": [{ "name": "X-Note", "value": "gpt-4" }] }
+      },
+      "id": "7",
+      "name": "v1 model ID in a header",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {}
+}

@@ -1,0 +1,31 @@
+{
+  "id": "wf-execute-each",
+  "name": "Per-item sub-workflows",
+  "nodes": [
+    {
+      "parameters": { "mode": "each", "workflowId": { "__rl": true, "value": "abc", "mode": "list" } },
+      "id": "1",
+      "name": "Run once per item",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "mode": "once", "workflowId": { "__rl": true, "value": "abc", "mode": "list" } },
+      "id": "2",
+      "name": "Run once for all items",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "workflowId": { "__rl": true, "value": "abc", "mode": "list" } },
+      "id": "3",
+      "name": "Default mode",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

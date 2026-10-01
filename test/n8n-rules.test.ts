@@ -237,3 +237,19 @@ describe('a clean workflow', () => {
     expect(scanFixture('rules/clean.json').findings).toEqual([]);
   });
 });
+
+describe('n8n3/execute-workflow-each-mode', () => {
+  const result = scanFixture('rules/execute-workflow-each-mode.json');
+
+  it('flags the "Run once for each item" mode, citing n8n source because the docs page does not list it', () => {
+    const [finding] = byNode(result, 'Run once per item');
+    expect(finding).toMatchObject({ ruleId: 'n8n3/execute-workflow-each-mode', severity: 'breaking', trigger: 'upgrade', verification: 'verified' });
+    expect(finding!.message).toContain('(mode: each)');
+    expect(finding!.sources).toContain('https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/cli/src/modules/breaking-changes');
+  });
+
+  it('leaves "Run once with all items", the default, alone', () => {
+    expect(byNode(result, 'Run once for all items')).toEqual([]);
+    expect(byNode(result, 'Default mode')).toEqual([]);
+  });
+});

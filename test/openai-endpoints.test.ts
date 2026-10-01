@@ -95,7 +95,7 @@ describe('n8n OpenAI node, "Assistant" resource', () => {
       verification: 'verified',
       replacement:
         'OpenAI node version 2: the Text resource\'s "Message a Model" operation (Responses API) or the Conversation resource (Conversations API)',
-      locations: ['OpenAI node, "Assistant" resource: resource'],
+      locations: ['OpenAI node: resource=assistant, operation=message (default)'],
     });
     expect(findings[0]!.message).toBe(
       'OpenAI has shut down the Assistants API (/v1/threads), which this node\'s "Message an Assistant" operation calls; calls fail.',
@@ -132,7 +132,7 @@ describe('n8n OpenAI node, "Video" resource', () => {
       withinWindow: true,
       replacement: 'None listed by OpenAI',
       verification: 'verified',
-      locations: ['OpenAI node, "Video" resource: resource'],
+      locations: ['OpenAI node: resource=video, operation=generate (default)'],
     });
     expect(finding!.message).toBe('OpenAI has shut down the Videos API (/v1/videos), which this node\'s "Generate" operation calls; calls fail.');
     expect(finding!.daysUntil).toBeLessThan(0);
@@ -164,7 +164,7 @@ describe('OpenAI Assistant node', () => {
       date: '2026-08-26',
       withinWindow: true,
       verification: 'verified',
-      locations: ['OpenAI Assistant node: mode'],
+      locations: ['OpenAI Assistant node: mode=existing (default)'],
     });
     expect(finding!.message).toBe(
       'OpenAI has shut down the Assistants API (/v1/assistants, /v1/threads), which this node\'s "Use Existing Assistant" operation calls; calls fail.',
@@ -257,7 +257,7 @@ describe('reusable prompt objects', () => {
     const [finding] = endpointFindings(result, 'Message a Model with prompt');
     expect(finding).toMatchObject({
       endpoint: 'prompt object pmpt_node1',
-      locations: ['OpenAI node, "Message a Model" prompt option: options.promptConfig.promptOptions.promptId'],
+      locations: ['OpenAI node: resource=text (default), operation=response (default), promptId=pmpt_node1'],
     });
     expect(finding!.message).toBe(
       "OpenAI shuts down reusable prompt objects (prompt object pmpt_node1), which this node's \"Message a Model\" operation uses; calls will fail.",
@@ -269,5 +269,34 @@ describe('reusable prompt objects', () => {
     expect(endpointFindings(result, 'Empty prompt ID')).toEqual([]);
     expect(endpointFindings(result, 'Classify operation')).toEqual([]);
     expect(endpointFindings(result, 'Other host')).toEqual([]);
+  });
+});
+
+describe('HTTP Request versions 1 and 2: endpoints', () => {
+  const result = scanFixture('rules/http-request-v1-v2.json');
+
+  it('reads OpenAI-Beta headers from headerParametersUi and headerParametersJson', () => {
+    expect(endpointFindings(result, 'v1 header list').map((f) => f.endpoint).sort()).toEqual(['/v1/assistants', 'OpenAI-Beta: assistants=v1']);
+    expect(endpointFindings(result, 'v1 header list').find((f) => f.endpoint === 'OpenAI-Beta: assistants=v1')).toMatchObject({
+      locations: ['HTTP Request to api.openai.com: headerParametersUi.parameter[0].value'],
+    });
+    expect(endpointFindings(result, 'v2 header JSON')).toMatchObject([{ endpoint: 'OpenAI-Beta: realtime=v1', locations: ['HTTP Request to api.openai.com: headerParametersJson'] }]);
+  });
+
+  it('reads prompt object IDs from bodyParametersJson', () => {
+    expect(endpointFindings(result, 'v2 prompt object')).toMatchObject([{ endpoint: 'prompt object pmpt_v2body' }]);
+  });
+});
+
+describe('node usage locations', () => {
+  it('names the settings that select the usage, marking defaults', () => {
+    const result = scanFixture('rules/openai-node-assistant.json');
+    expect(endpointFindings(result, 'Create support assistant')[0]!.locations).toEqual(['OpenAI node: resource=assistant, operation=create']);
+    const assistantNode = scanFixture('rules/openai-assistant-node.json');
+    expect(endpointFindings(assistantNode, 'New triage assistant')[0]!.locations).toEqual(['OpenAI Assistant node: mode=new']);
+    const prompts = scanFixture('rules/openai-prompt-objects.json');
+    expect(endpointFindings(prompts, 'Prompt option stored as array')[0]!.locations).toEqual([
+      'OpenAI node: resource=text, operation=response, promptId=pmpt_array',
+    ]);
   });
 });

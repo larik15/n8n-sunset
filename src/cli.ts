@@ -1,46 +1,63 @@
 #!/usr/bin/env node
 import { readFileSync, realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { loadWorkflowsFromApi } from './api.js';
 import { daysBetween, isIsoDay, utcToday } from './dates.js';
-import { loadRegistry } from './registry.js';
+import { loadRegistry, type Registry } from './registry.js';
 import { makeColors, renderTable, toJsonReport } from './report.js';
 import { scanWorkflows } from './scan.js';
-import { loadWorkflows } from './workflows.js';
+import { loadWorkflows, type LoadResult } from './workflows.js';
 
 export const EXIT_OK = 0;
 export const EXIT_BREAKING = 1;
 export const EXIT_ERROR = 2;
 
 /** The registry is a snapshot of official pages; warn once it is this many days older than --as-of. */
-export const REGISTRY_MAX_AGE_DAYS = 30;
-const SUPPORTED_TARGETS = ['3.0'];
+export const REGISTRY_WARN_AGE_DAYS = 30;
+/** Default for --max-registry-age: older data fails the run (exit 2), since new shutdowns may be missing. */
+export const REGISTRY_MAX_AGE_DAYS = 90;
 
 const HELP = `Usage: n8n-sunset <path...> [options]
+       n8n-sunset --from-api [options]
 
-Scan n8n workflow exports (folders of JSON files, or single files) for:
+Scan n8n workflows for:
   - OpenAI models being shut down (gpt-4, gpt-3.5-turbo, o1-mini, ...)
   - OpenAI endpoints being shut down (Assistants API, Videos API, reusable
     prompt objects, Evals API, OpenAI-Beta headers, legacy /v1 endpoints)
   - nodes removed or changed in n8n 3.0 (these apply when you upgrade)
 
+Read workflows from exported JSON files (folders or single files), or straight
+from a running n8n through its public API with --from-api.
+
 Options:
-  --json             Print a JSON report instead of the table (errors too)
-  --days <n>         Window for the exit code, in days (default: 30)
-  --as-of <date>     Measure dates from this day, YYYY-MM-DD (default: today, UTC)
-  --target <ver>     Also fail on breaking changes on upgrade to this n8n version (3.0)
-  --allow-skipped    Don't exit 2 for files that aren't readable n8n workflows
-  --no-color         Disable colors (also NO_COLOR, or FORCE_COLOR=0)
-  -h, --help         Show this help
-  -v, --version      Show the version
+  --from-api                  Read workflows from the n8n API instead of files, using
+                              N8N_API_URL (e.g. https://n8n.example.com/api/v1) and
+                              N8N_API_KEY; nothing is written to disk
+  --json                      Print a JSON report instead of the table (errors too)
+  --days <n>                  Window for the exit code, in days (default: 30)
+  --as-of <date>              Measure dates from this day, YYYY-MM-DD (default: today, UTC)
+  --target <ver>              Also fail on breaking changes on upgrade to this n8n
+                              version (3.0, or 3)
+  --allow-skipped             Don't exit 2 for files that aren't readable n8n workflows,
+                              or for symbolic links (which are never followed)
+  --max-registry-age <days>   Exit 2 when the bundled data is older than this many days
+                              before --as-of (default: ${REGISTRY_MAX_AGE_DAYS}); it warns after ${REGISTRY_WARN_AGE_DAYS}
+  --registry <path>           Use this registry file instead of the bundled one
+  --no-color                  Disable colors (also NO_COLOR, or FORCE_COLOR=0)
+  -h, --help                  Show this help
+  -v, --version               Show the version
 
 Exit codes:
   0  no breaking finding takes effect within the window
   1  a breaking OpenAI shutdown takes effect within the window or already has
      (with --target 3.0, also any breaking change on upgrade to n8n 3.0);
      findings on disabled nodes never count
-  2  usage error, unreadable path, no workflows found, or a JSON file that is
-     not a readable n8n workflow (unless --allow-skipped)
+  2  a problem with the input or the data: usage error, unreadable path, no
+     workflows found, a JSON file that is not a readable n8n workflow or a
+     symbolic link (unless --allow-skipped), an n8n API error, or a registry
+     that is missing, invalid, or older than --max-registry-age
 `;
 
 export interface Io {
@@ -49,6 +66,8 @@ export interface Io {
   cwd: string;
   env: Record<string, string | undefined>;
   now: Date;
+  /** For tests; defaults to the global fetch. */
+  fetch?: typeof globalThis.fetch;
 }
 
 function packageVersion(): string {
@@ -65,13 +84,20 @@ export function colorEnabled(env: Io['env'], isTTY: boolean | undefined, noColor
   return isTTY === true;
 }
 
-export function main(argv: string[], io: Io): number {
+/** "3", "3.0", "v3" and "v3.0" all mean n8n 3.0; anything else is not a supported target. */
+export function normalizeTarget(value: string): string | undefined {
+  return /^v?3(\.0)?$/i.test(value.trim()) ? '3.0' : undefined;
+}
+
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+export async function main(argv: string[], io: Io): Promise<number> {
   const wantsJson = argv.includes('--json');
-  const fail = (message: string, withHelp = false): number => {
+  const fail = (text: string, withHelp = false): number => {
     if (wantsJson) {
-      io.stdout.write(`${JSON.stringify({ tool: 'n8n-sunset', error: { message }, exitCode: EXIT_ERROR }, null, 2)}\n`);
+      io.stdout.write(`${JSON.stringify({ tool: 'n8n-sunset', error: { message: text }, exitCode: EXIT_ERROR }, null, 2)}\n`);
     } else {
-      io.stderr.write(`n8n-sunset: ${message}\n${withHelp ? `\n${HELP}` : ''}`);
+      io.stderr.write(`n8n-sunset: ${text}\n${withHelp ? `\n${HELP}` : ''}`);
     }
     return EXIT_ERROR;
   };
@@ -87,13 +113,16 @@ export function main(argv: string[], io: Io): number {
         'as-of': { type: 'string' },
         target: { type: 'string', multiple: true },
         'allow-skipped': { type: 'boolean', default: false },
+        'from-api': { type: 'boolean', default: false },
+        'max-registry-age': { type: 'string', default: String(REGISTRY_MAX_AGE_DAYS) },
+        registry: { type: 'string' },
         'no-color': { type: 'boolean', default: false },
         help: { type: 'boolean', short: 'h', default: false },
         version: { type: 'boolean', short: 'v', default: false },
       },
     });
   } catch (error) {
-    return fail(error instanceof Error ? error.message : String(error), true);
+    return fail(message(error), true);
   }
   const { values, positionals } = args;
 
@@ -105,35 +134,58 @@ export function main(argv: string[], io: Io): number {
     io.stdout.write(`${packageVersion()}\n`);
     return EXIT_OK;
   }
-  if (positionals.length === 0) return fail('missing path to workflow exports', true);
+  const fromApi = values['from-api'];
+  if (fromApi && positionals.length > 0) return fail('pass either paths or --from-api, not both');
+  if (!fromApi && positionals.length === 0) return fail('missing path to workflow exports (or use --from-api)', true);
   if (!/^\d+$/.test(values.days)) return fail(`--days must be a whole number of days, got "${values.days}"`);
+  if (!/^\d+$/.test(values['max-registry-age'])) return fail(`--max-registry-age must be a whole number of days, got "${values['max-registry-age']}"`);
   const asOf = values['as-of'] ?? utcToday(io.now);
   if (!isIsoDay(asOf)) return fail(`--as-of must be a date like 2026-10-01, got "${asOf}"`);
-  const targets = (values.target ?? []).map((t) => t.replace(/^v/i, ''));
-  const unsupported = targets.filter((t) => !SUPPORTED_TARGETS.includes(t));
-  if (unsupported.length) return fail(`--target supports ${SUPPORTED_TARGETS.join(', ')}, got "${unsupported.join(', ')}"`);
+  const targets: string[] = [];
+  for (const raw of values.target ?? []) {
+    const target = normalizeTarget(raw);
+    if (!target) return fail(`--target supports 3.0 (or 3), got "${raw}"`);
+    if (!targets.includes(target)) targets.push(target);
+  }
 
-  let load;
+  let registry: Registry;
   try {
-    load = loadWorkflows(positionals, io.cwd);
+    registry = values.registry ? loadRegistry(resolve(io.cwd, values.registry)) : loadRegistry();
   } catch (error) {
-    return fail(error instanceof Error ? error.message : String(error));
+    return fail(message(error));
   }
-  if (load.workflows.length === 0 && load.errors.length === 0 && load.skipped.length === 0) {
-    return fail(`no n8n workflows found in ${positionals.join(', ')}`);
-  }
-
-  const registry = loadRegistry();
-  const warnings: string[] = [];
   const age = daysBetween(registry.registryVersion, asOf);
-  if (age > REGISTRY_MAX_AGE_DAYS) {
-    warnings.push(
-      `the bundled registry is from ${registry.registryVersion}, ${age} days before ${asOf}; newer shutdowns may be missing. Update n8n-sunset.`,
+  const maxAge = Number(values['max-registry-age']);
+  if (age > maxAge) {
+    return fail(
+      `the registry is from ${registry.registryVersion}, ${age} days before ${asOf}, older than --max-registry-age ${maxAge}. ` +
+        'Update n8n-sunset (npx n8n-sunset@latest), or raise --max-registry-age to accept older data.',
     );
   }
-  for (const { file, message } of load.errors) warnings.push(`could not parse ${file}: ${message}`);
+
+  let load: LoadResult;
+  try {
+    if (fromApi) {
+      const baseUrl = io.env.N8N_API_URL;
+      const apiKey = io.env.N8N_API_KEY;
+      if (!baseUrl || !apiKey) return fail('--from-api needs the N8N_API_URL and N8N_API_KEY environment variables');
+      load = await loadWorkflowsFromApi({ baseUrl, apiKey, ...(io.fetch ? { fetch: io.fetch } : {}) });
+    } else {
+      load = loadWorkflows(positionals, io.cwd);
+    }
+  } catch (error) {
+    return fail(message(error));
+  }
+  if (load.workflows.length === 0 && load.errors.length === 0 && load.skipped.length === 0) {
+    return fail(fromApi ? 'the n8n API returned no workflows' : `no n8n workflows found in ${positionals.join(', ')}`);
+  }
+
+  const warnings: string[] = [];
+  if (age > REGISTRY_WARN_AGE_DAYS) {
+    warnings.push(`the bundled registry is from ${registry.registryVersion}, ${age} days before ${asOf}; newer shutdowns may be missing. Update n8n-sunset.`);
+  }
+  for (const { file, message: text } of load.errors) warnings.push(`could not parse ${file}: ${text}`);
   for (const { file, reason } of load.skipped) warnings.push(`skipped ${file}: ${reason}`);
-  for (const link of load.symlinks) warnings.push(`did not follow symbolic link ${link}`);
 
   const result = scanWorkflows(load.workflows, registry, { asOf, windowDays: Number(values.days), targets });
   const failedFiles = load.errors.length + load.skipped.length;
@@ -171,11 +223,19 @@ function isEntryPoint(): boolean {
 }
 
 if (isEntryPoint()) {
-  process.exitCode = main(process.argv.slice(2), {
+  main(process.argv.slice(2), {
     stdout: process.stdout,
     stderr: process.stderr,
     cwd: process.cwd(),
     env: process.env,
     now: new Date(),
-  });
+  }).then(
+    (code) => {
+      process.exitCode = code;
+    },
+    (error: unknown) => {
+      process.stderr.write(`n8n-sunset: ${message(error)}\n`);
+      process.exitCode = EXIT_ERROR;
+    },
+  );
 }

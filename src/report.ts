@@ -204,6 +204,26 @@ export interface TableOptions {
   failedFiles: number;
 }
 
+const HEADER_SEPARATOR = '  ·  ';
+
+/**
+ * "n8n-sunset  ·  3 workflows scanned  ·  ..." with the separators intact, broken between
+ * segments (never inside one) when the line is wider than the terminal.
+ */
+function headerLines(segments: string[], width: number, c: Colors): string[] {
+  const lines: string[] = [];
+  let line = 'n8n-sunset';
+  for (const segment of segments) {
+    if (displayWidth(line + HEADER_SEPARATOR + segment) <= width) line += HEADER_SEPARATOR + segment;
+    else {
+      lines.push(line);
+      line = segment;
+    }
+  }
+  lines.push(line);
+  return lines.map((text, i) => (i === 0 ? text.replace('n8n-sunset', c.bold('n8n-sunset')) : text).replace(/ {2}· {2}/g, `  ${c.dim('·')}  `));
+}
+
 export function renderTable(result: ScanResult, registry: Registry, load: LoadResult, options: TableOptions): string {
   const c = options.colors;
   const { summary } = result;
@@ -213,14 +233,13 @@ export function renderTable(result: ScanResult, registry: Registry, load: LoadRe
   /** Wraps prose to the terminal width before styling, so long lines stay readable in narrow terminals. */
   const prose = (text: string, style: Style = plain) => out.push(...wrap(text, options.width).map((line) => style(line)));
 
-  const header = [
-    'n8n-sunset',
+  const segments = [
     `${plural(summary.workflowsScanned, 'workflow')} scanned`,
     `as of ${result.asOf} (UTC)`,
     `window ${result.windowDays} days`,
     ...(result.targets?.length ? [`target n8n ${result.targets.join(', ')}`] : []),
-  ].join('  ·  ');
-  out.push(...wrap(header, options.width).map((line, i) => (i === 0 ? line.replace('n8n-sunset', c.bold('n8n-sunset')) : line)), '');
+  ];
+  out.push(...headerLines(segments, options.width, c), '');
 
   if (result.findings.length === 0) {
     prose(`No findings in ${plural(summary.workflowsScanned, 'workflow')}.`, c.green);

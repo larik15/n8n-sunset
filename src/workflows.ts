@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
 
 export interface WorkflowNode {
@@ -120,7 +120,7 @@ export function readWorkflows(json: unknown, file: string): { workflows: Workflo
 
 export function loadWorkflows(paths: string[], cwd = process.cwd()): LoadResult {
   const result: LoadResult = { workflows: [], errors: [], skipped: [], symlinks: [] };
-  const files: string[] = [];
+  const found: string[] = [];
   const symlinks: string[] = [];
   for (const path of paths) {
     const full = resolve(cwd, path);
@@ -130,16 +130,33 @@ export function loadWorkflows(paths: string[], cwd = process.cwd()): LoadResult 
     } catch {
       throw new Error(`Path not found: ${path}`);
     }
-    if (stats.isDirectory()) walkFolder(full, files, symlinks);
-    else files.push(full);
+    if (stats.isDirectory()) walkFolder(full, found, symlinks);
+    else found.push(full);
   }
-  result.symlinks = symlinks.map((link) => displayPath(link, cwd));
+
+  // The same file can be reached twice ("./workflows ./workflows/a.json", overlapping folders,
+  // different spellings of one path); read each real file once.
+  const seen = new Set<string>();
+  const files = found.filter((file) => {
+    const real = realpathSync.native(file);
+    const key = process.platform === 'win32' || process.platform === 'darwin' ? real.toLowerCase() : real;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Links are not followed; they count as skipped files so a scan never silently misses them.
+  for (const link of [...new Set(symlinks)]) {
+    const shown = displayPath(link, cwd);
+    result.symlinks.push(shown);
+    result.skipped.push({ file: shown, reason: 'symbolic link, not followed' });
+  }
 
   for (const file of files) {
     const shown = displayPath(file, cwd);
     let json: unknown;
     try {
-      json = JSON.parse(readFileSync(file, 'utf8').replace(/^﻿/, ''));
+      json = JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
     } catch (error) {
       result.errors.push({ file: shown, message: error instanceof Error ? error.message : String(error) });
       continue;

@@ -1,0 +1,27 @@
+{
+  "id": "wf-resource-locators",
+  "name": "Resource locator caches",
+  "nodes": [
+    {
+      "parameters": {
+        "model": { "__rl": true, "value": "gpt-5.6-sol", "mode": "list", "cachedResultName": "gpt-4", "cachedResultUrl": "https://platform.openai.com/docs/models/gpt-4" }
+      },
+      "id": "1",
+      "name": "Model changed, stale cache",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "value": "gpt-4", "mode": "list", "cachedResultName": "GPT-4 (legacy)" }
+      },
+      "id": "2",
+      "name": "Deprecated value",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

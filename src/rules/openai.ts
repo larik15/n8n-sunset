@@ -1,5 +1,6 @@
 import type { RuleFinding } from '../findings.js';
 import type { LegacyFineTunes, OpenAiModel, Registry, Severity } from '../registry.js';
+import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
 import { STICKY_NOTE } from './n8n.js';
@@ -8,7 +9,7 @@ export interface ModelIndex {
   exact: Map<string, { entry: OpenAiModel; alias: boolean }>;
   families: Map<string, OpenAiModel>;
   fineTunes: OpenAiModel[];
-  legacyFineTunes?: { pattern: RegExp; entry: OpenAiModel };
+  legacyFineTunes?: { pattern: RegExp; suffixPattern: RegExp; entry: OpenAiModel };
 }
 
 export interface ModelMatch {
@@ -17,6 +18,8 @@ export interface ModelMatch {
   kind: 'exact' | 'alias' | 'dated-snapshot' | 'fine-tune' | 'legacy-fine-tune' | 'provider-prefixed';
   /** For provider-prefixed IDs: the match for the part after "openai/". */
   inner?: ModelMatch;
+  /** For legacy fine-tunes: the ID carries a custom suffix (ada:ft-org:my-suffix-2022-...). */
+  suffix?: boolean;
 }
 
 export function buildModelIndex(models: OpenAiModel[], legacy?: LegacyFineTunes): ModelIndex {
@@ -29,8 +32,12 @@ export function buildModelIndex(models: OpenAiModel[], legacy?: LegacyFineTunes)
   }
   index.fineTunes.sort((a, b) => b.fineTuneOf!.length - a.fineTuneOf!.length);
   if (legacy) {
+    const bases = legacy.bases.join('|');
     index.legacyFineTunes = {
-      pattern: new RegExp(`^(${legacy.bases.join('|')}):ft-[A-Za-z0-9-]+$`),
+      // curie:ft-acme-2021-08-23-17-54-10
+      pattern: new RegExp(`^(${bases}):ft-[A-Za-z0-9-]+$`),
+      // ada:ft-your-org:custom-model-name-2022-02-15-04-21-04 (created with a suffix)
+      suffixPattern: new RegExp(`^(${bases}):ft-[A-Za-z0-9-]+:[A-Za-z0-9-]+$`),
       entry: {
         id: '<base>:ft-…',
         shutdownDate: legacy.shutdownDate,
@@ -65,7 +72,9 @@ export function matchModelId(token: string, index: ModelIndex): ModelMatch | und
   }
 
   // Legacy /v1/fine-tunes models look like curie:ft-acme-2021-08-23-17-54-10.
-  if (index.legacyFineTunes?.pattern.test(token)) return { token, entry: index.legacyFineTunes.entry, kind: 'legacy-fine-tune' };
+  const legacy = index.legacyFineTunes;
+  if (legacy?.pattern.test(token)) return { token, entry: legacy.entry, kind: 'legacy-fine-tune' };
+  if (legacy?.suffixPattern.test(token)) return { token, entry: legacy.entry, kind: 'legacy-fine-tune', suffix: true };
 
   // OpenRouter and similar providers name OpenAI models openai/<model>.
   if (token.startsWith(PROVIDER_PREFIX)) {
@@ -182,9 +191,14 @@ function isModelNamed(leaf: StringLeaf): boolean {
   return /model/i.test(leaf.path) || isModelPair(leaf);
 }
 
-/** Request body fields of the HTTP Request node, where model IDs appear as quoted JSON strings. */
-const HTTP_BODY_KEYS = new Set(['jsonBody', 'body', 'jsonQuery']);
-const rootKey = (leaf: StringLeaf) => leaf.path.split(/[.[]/)[0]!;
+/**
+ * Request body and query text of the HTTP Request node, where model IDs appear as quoted JSON
+ * strings: jsonBody/body/jsonQuery from version 3 on, bodyParametersJson/queryParametersJson in 1-2.
+ */
+export const HTTP_BODY_TEXT_KEYS = new Set(['jsonBody', 'body', 'jsonQuery', 'bodyParametersJson', 'queryParametersJson']);
+/** Name/value parameter lists: bodyParameters/queryParameters (v3+), bodyParametersUi/queryParametersUi (v1-2). */
+export const HTTP_PARAMETER_LIST_KEYS = new Set(['bodyParameters', 'queryParameters', 'bodyParametersUi', 'queryParametersUi']);
+export const rootKey = (leaf: StringLeaf) => leaf.path.split(/[.[]/)[0]!;
 
 /**
  * Strings that might be model IDs. Free text (code, request bodies) only counts when quoted,
@@ -195,8 +209,8 @@ function candidates(leaf: StringLeaf, kind: Strategy['kind']): string[] {
     case 'http': {
       const root = rootKey(leaf);
       if (leaf.path === 'url') return urlSegments(leaf.value);
-      if (HTTP_BODY_KEYS.has(root)) return quotedTokens(leaf.value);
-      if (/^(bodyParameters|queryParameters)$/.test(root) && isModelPair(leaf)) return [wholeValue(leaf.value)];
+      if (HTTP_BODY_TEXT_KEYS.has(root)) return quotedTokens(leaf.value);
+      if (HTTP_PARAMETER_LIST_KEYS.has(root) && isModelPair(leaf)) return [wholeValue(leaf.value)];
       return [];
     }
     case 'llm':
@@ -239,22 +253,25 @@ export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index:
     }
   }
 
-  const source = registry.sources[registry.openai.source];
-  if (!source) throw new Error(`Registry references unknown source "${registry.openai.source}"`);
-  const legacySources = registry.openai.legacyFineTunes.sources.map((key) => registry.sources[key]?.url ?? key);
+  const [openAiUrl] = sourceUrls(registry, [registry.openai.source]);
+  const legacy = registry.openai.legacyFineTunes;
 
   return [...matches.values()].map(({ match, paths }) => {
     const { entry } = match;
     const past = entry.shutdownDate <= asOf;
     // A warning is a possible break that needs review; it never sets the exit code.
     const warning = strategy.warning ?? (match.kind === 'provider-prefixed' ? PROVIDER_NOTE : undefined);
+    const suffixForm = match.suffix || match.inner?.suffix ? legacy.suffixForm : undefined;
     const unverifiedNote =
       warning ??
       (match.kind === 'fine-tune' || match.inner?.kind === 'fine-tune'
         ? FINE_TUNE_NOTE
-        : entry.verification === 'unverified'
-          ? entry.verificationNote
-          : undefined);
+        : suffixForm?.verification === 'unverified'
+          ? suffixForm.verificationNote
+          : entry.verification === 'unverified'
+            ? entry.verificationNote
+            : undefined);
+    const legacyKind = match.kind === 'legacy-fine-tune' || match.inner?.kind === 'legacy-fine-tune';
     const severity: Severity = warning ? 'warning' : 'breaking';
     return {
       category: 'openai-model',
@@ -267,7 +284,7 @@ export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index:
       replacement: entry.replacement ?? 'None listed by OpenAI',
       verification: unverifiedNote ? 'unverified' : 'verified',
       ...(unverifiedNote ? { verificationNote: unverifiedNote } : {}),
-      sources: match.kind === 'legacy-fine-tune' ? legacySources : [source.url],
+      sources: legacyKind ? sourceUrls(registry, suffixForm?.sources ?? legacy.sources) : [openAiUrl!],
       model: match.token,
       locations: paths.map((path) => `${strategy.where}: ${path}`),
     } satisfies RuleFinding;

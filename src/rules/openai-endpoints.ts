@@ -1,9 +1,9 @@
 import type { RuleFinding } from '../findings.js';
-import type { OpenAiEndpoint, Registry } from '../registry.js';
+import type { OpenAiEndpoint, OpenAiNodeUsage, Registry } from '../registry.js';
 import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
-import { CODE_TYPES, HTTP_WHERE, isOpenAiHttpNode, mentionsOpenAiHost, quotedTokens } from './openai.js';
+import { CODE_TYPES, HTTP_BODY_TEXT_KEYS, HTTP_WHERE, isOpenAiHttpNode, mentionsOpenAiHost, quotedTokens, rootKey } from './openai.js';
 
 const CODE_WHERE = 'Code node source';
 
@@ -32,9 +32,10 @@ function httpMethod(node: WorkflowNode): string | undefined {
   return typeof method === 'string' && !method.startsWith('=') ? method.toUpperCase() : undefined;
 }
 
-const rootKey = (leaf: StringLeaf) => leaf.path.split(/[.[]/)[0]!;
-const HTTP_HEADER_KEYS = new Set(['headerParameters', 'jsonHeaders']);
-const HTTP_BODY_KEYS = new Set(['jsonBody', 'body', 'jsonQuery', 'bodyParameters']);
+/** Header fields: headerParameters/jsonHeaders (v3+), headerParametersUi/headerParametersJson (v1-2). */
+const HTTP_HEADER_KEYS = new Set(['headerParameters', 'jsonHeaders', 'headerParametersUi', 'headerParametersJson']);
+/** Request body fields of every HTTP Request version. */
+const HTTP_BODY_KEYS = new Set([...HTTP_BODY_TEXT_KEYS, 'bodyParameters', 'bodyParametersUi']);
 
 function headerLeaves(leaves: StringLeaf[], header: { name: string; value: string }): StringLeaf[] {
   const name = header.name.toLowerCase();
@@ -68,6 +69,28 @@ function endpointMessage(endpoint: OpenAiEndpoint, what: string, asOf: string, v
   return endpoint.note ? `${message} ${endpoint.note}` : message;
 }
 
+/**
+ * Where a node usage was found, as the settings that select it:
+ * "OpenAI node: resource=assistant, operation=message (default)". Values the export leaves out
+ * (n8n omits defaults) are marked "(default)".
+ */
+function usageLocation(
+  usage: OpenAiNodeUsage,
+  params: Record<string, unknown>,
+  operationParameter: string,
+  operation: string,
+  required: string | undefined,
+): string {
+  const setting = (name: string, actual: unknown, effective: string) =>
+    `${name}=${effective}${typeof actual === 'string' ? '' : ' (default)'}`;
+  const parts: string[] = [];
+  if (usage.parameter !== undefined) parts.push(setting(usage.parameter, params[usage.parameter], usage.value!));
+  parts.push(setting(operationParameter, params[operationParameter], operation));
+  if (usage.requires && required !== undefined) parts.push(`${usage.requires.split('.').pop()}=${required}`);
+  const node = usage.label.split(',')[0]!;
+  return `${node}: ${parts.join(', ')}`;
+}
+
 /** n8n nodes that call a deprecated endpoint themselves, such as the OpenAI node's "Assistant" resource. */
 function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
   const params = node.parameters ?? {};
@@ -80,7 +103,8 @@ function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): 
       if (usage.parameter !== undefined && (params[usage.parameter] ?? usage.parameterDefault) !== usage.value) continue;
       const operationParameter = usage.operationParameter ?? 'operation';
       const value = params[operationParameter];
-      const known = usage.operations[typeof value === 'string' ? value : usage.defaultOperation];
+      const operation = typeof value === 'string' ? value : usage.defaultOperation;
+      const known = usage.operations[operation];
       if (!known) continue;
       let required: string | undefined;
       if (usage.requires) {
@@ -102,7 +126,7 @@ function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): 
         ...(note ? { verificationNote: note } : {}),
         sources: sourceUrls(registry, [...endpoint.sources, ...usage.sources]),
         endpoint: shown,
-        locations: [`${usage.label}: ${usage.requires ?? usage.parameter ?? operationParameter}`],
+        locations: [usageLocation(usage, params, operationParameter, operation, required)],
       });
     }
   }

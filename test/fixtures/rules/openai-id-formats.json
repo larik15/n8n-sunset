@@ -3,28 +3,46 @@
   "name": "Model ID formats",
   "nodes": [
     {
-      "parameters": { "model": "openai/gpt-4", "options": {} },
+      "parameters": {
+        "model": "openai/gpt-4",
+        "options": {}
+      },
       "id": "1",
       "name": "OpenRouter chat model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
-      "parameters": { "jsCode": "const body = { model: 'openai/gpt-3.5-turbo', messages: $json.messages };\nreturn [{ json: body }];" },
+      "parameters": {
+        "jsCode": "const body = { model: 'openai/gpt-3.5-turbo', messages: $json.messages };\nreturn [{ json: body }];"
+      },
       "id": "2",
       "name": "Provider-prefixed in code",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [200, 0]
+      "position": [
+        200,
+        0
+      ]
     },
     {
-      "parameters": { "resource": "text", "model": "curie:ft-acme-2021-08-23-17-54-10", "prompt": "={{ $json.question }}" },
+      "parameters": {
+        "resource": "text",
+        "model": "curie:ft-acme-2021-08-23-17-54-10",
+        "prompt": "={{ $json.question }}"
+      },
       "id": "3",
       "name": "Legacy fine-tune",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1.1,
-      "position": [400, 0]
+      "position": [
+        400,
+        0
+      ]
     },
     {
       "parameters": {
@@ -38,15 +56,39 @@
       "name": "Legacy fine-tune over HTTP",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [600, 0]
+      "position": [
+        600,
+        0
+      ]
     },
     {
-      "parameters": { "model": "anthropic/claude-sonnet-5-5", "options": {} },
+      "parameters": {
+        "model": "anthropic/claude-sonnet-5-5",
+        "options": {}
+      },
       "id": "5",
       "name": "Other provider prefix",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
-      "position": [800, 0]
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "model": "ada:ft-your-org:custom-model-name-2022-02-15-04-21-04",
+        "prompt": "hi"
+      },
+      "id": "6",
+      "name": "Legacy fine-tune with suffix",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        0
+      ]
     }
   ],
   "connections": {}
