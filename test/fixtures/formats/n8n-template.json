@@ -1,0 +1,21 @@
+{
+  "workflow": {
+    "id": 9001,
+    "name": "Template: summarize support tickets",
+    "views": 1200,
+    "description": "Shape of a workflow returned by the n8n.io templates API",
+    "workflow": {
+      "nodes": [
+        {
+          "parameters": { "model": { "__rl": true, "value": "gpt-3.5-turbo", "mode": "list" }, "options": {} },
+          "id": "1",
+          "name": "Template chat model",
+          "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+          "typeVersion": 1.2,
+          "position": [0, 0]
+        }
+      ],
+      "connections": {}
+    }
+  }
+}

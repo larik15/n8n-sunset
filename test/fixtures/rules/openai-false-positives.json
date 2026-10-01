@@ -1,0 +1,74 @@
+{
+  "id": "wf-false-positives",
+  "name": "Lookalikes",
+  "nodes": [
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4", "mode": "id" }, "options": { "baseURL": "https://openrouter.ai/api/v1" } },
+      "id": "1",
+      "name": "Chat model via OpenRouter",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenRouter key" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4", "mode": "id" }, "options": { "baseURL": "https://api.openai.com/v1" } },
+      "id": "2",
+      "name": "Chat model with explicit OpenAI URL",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "X-Debug-Model", "value": "gpt-4" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"gpt-5.6-sol\", \"input\": \"Explain what /v1/assistants used to do\" }",
+        "options": { "response": { "response": { "outputPropertyName": "o1" } } }
+      },
+      "id": "3",
+      "name": "Responses call with lookalikes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://proxy.example.com/v1/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"gpt-4\" }"
+      },
+      "id": "4",
+      "name": "Proxy with OpenAI credential",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "url": "https://api.openai.com:443/v1/assistants" },
+      "id": "5",
+      "name": "Assistants with port",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The old /v1/threads endpoint is gone, so we call the Responses API instead.\nconst res = await this.helpers.httpRequest({ method: 'POST', url: 'https://api.openai.com/v1/responses', body: $json });\nreturn [{ json: res }];"
+      },
+      "id": "6",
+      "name": "Code mentioning a path in a comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    }
+  ],
+  "connections": {}
+}

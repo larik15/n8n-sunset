@@ -1,0 +1,15 @@
+{
+  "id": "wf-emoji",
+  "name": "🚀 Launch 日本",
+  "nodes": [
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4", "mode": "list" }, "options": {} },
+      "id": "1",
+      "name": "🤖 Bot ✅",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    }
+  ],
+  "connections": {}
+}

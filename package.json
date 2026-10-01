@@ -41,6 +41,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test",
     "prepack": "npm run build"
   },
   "devDependencies": {

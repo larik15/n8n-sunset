@@ -22,10 +22,14 @@ describe('n8n3/removed-node', () => {
       severity: 'breaking',
       workflow: 'Legacy nightly import',
       replacement,
-      date: '2026-10',
-      datePrecision: 'month',
+      trigger: 'upgrade',
+      date: null,
+      upgradeTo: '3.0',
+      daysUntil: null,
+      status: 'on-upgrade',
       verification: 'verified',
-      withinWindow: true,
+      withinWindow: false,
+      countsTowardExit: false,
     });
     expect(findings[0]!.message).toBe(`${displayName} node is removed in n8n 3.0.`);
     expect(findings[0]!.sources).toContain(DOCS_URL);
@@ -53,7 +57,7 @@ describe('n8n3/removed-node', () => {
   it('says the OpenAI Assistant node already fails, and does not suggest the Assistant resource', () => {
     const [finding] = checkN8nNode({ name: 'Assistant', type: '@n8n/n8n-nodes-langchain.openAiAssistant', typeVersion: 1.1 }, registry);
     expect(finding!.message).toBe(
-      'OpenAI Assistant node is removed in n8n 3.0. It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). ' +
+      'OpenAI Assistant node is removed in n8n 3.0. It already fails today: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). ' +
         'The n8n docs suggest the OpenAI node\'s "Assistant" resource instead, but that resource calls the same Assistants API, so the replacement here is the OpenAI node version 2.',
     );
     expect(finding!.replacement).toContain('OpenAI node version 2');
@@ -67,7 +71,7 @@ describe('n8n3/removed-node: AI Transform (auto-migrated)', () => {
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]).toMatchObject({ severity: 'info', ruleId: 'n8n3/removed-node' });
     expect(result.findings[0]!.message).toContain('AI Transform node is retired in n8n 3.0.');
-    expect(result.summary.breakingWithinWindow).toBe(0);
+    expect(result.summary.exitFindings).toBe(0);
   });
 });
 
@@ -137,7 +141,7 @@ describe('n8n3/gmail-trigger-pre-1-4', () => {
 
   it('flags Gmail Trigger below 1.4 as a behavior change', () => {
     expect(byNode(result, 'Old Gmail Trigger')[0]).toMatchObject({ ruleId: 'n8n3/gmail-trigger-pre-1-4', severity: 'behavior-change' });
-    expect(result.summary.breakingWithinWindow).toBe(0);
+    expect(result.summary.exitFindings).toBe(0);
   });
 
   it('leaves version 1.4 alone', () => {
@@ -206,11 +210,25 @@ describe('n8n3/compression-limits', () => {
   });
 });
 
-describe('n8n 3.0 dates', () => {
-  it('measures from the first day of the release month', () => {
-    const result = scanFixture('rules/removed-nodes.json', { asOf: '2026-08-01', windowDays: 30 });
-    expect(result.findings[0]).toMatchObject({ daysUntil: 61, withinWindow: false });
-    expect(result.summary.breakingWithinWindow).toBe(0);
+describe('n8n 3.0 is an upgrade event, not a date', () => {
+  it('gives n8n findings no date, whatever the as-of date', () => {
+    for (const asOf of ['2026-08-01', '2026-10-31', '2027-03-01']) {
+      const [finding] = scanFixture('rules/removed-nodes.json', { asOf }).findings;
+      expect(finding, asOf).toMatchObject({ trigger: 'upgrade', date: null, daysUntil: null, status: 'on-upgrade', withinWindow: false });
+    }
+  });
+
+  it('does not count n8n breaking findings toward the exit code by default', () => {
+    const result = scanFixture('rules/removed-nodes.json');
+    expect(result.summary.breaking).toBeGreaterThan(0);
+    expect(result.summary.exitFindings).toBe(0);
+  });
+
+  it('counts them with target 3.0, except on disabled nodes and for behavior changes', () => {
+    const result = scanFixture('rules/removed-nodes.json', { targets: ['3.0'] });
+    expect(result.summary.exitFindings).toBe(5);
+    expect(byNode(result, 'Orbit sync')[0]).toMatchObject({ nodeDisabled: true, countsTowardExit: false });
+    expect(scanFixture('rules/gmail-trigger.json', { targets: ['3.0'] }).summary.exitFindings).toBe(0);
   });
 });
 

@@ -28,8 +28,14 @@ describe('sunset registry', () => {
     for (const ref of refs) expect(registry.sources, ref).toHaveProperty([ref]);
   });
 
-  it('records the n8n 3.0 release month', () => {
+  it('records the n8n 3.0 release month as information, not as a deadline', () => {
     expect(registry.n8n.release).toMatchObject({ version: '3.0', date: '2026-10', datePrecision: 'month' });
+    expect(registry.n8n.release.note).toContain('take effect when you upgrade');
+  });
+
+  it('describes legacy fine-tunes with the date the deprecations page gives', () => {
+    expect(registry.openai.legacyFineTunes).toMatchObject({ bases: ['ada', 'babbage', 'curie', 'davinci'], shutdownDate: '2024-01-04', verification: 'verified' });
+    for (const ref of registry.openai.legacyFineTunes.sources) expect(registry.sources, ref).toHaveProperty([ref]);
   });
 
   it('lists removed nodes with valid, unique node types', () => {
@@ -84,7 +90,8 @@ describe('sunset registry', () => {
     for (const { endpoint, usage } of usages) {
       expect(usage.operations, usage.label).toHaveProperty([usage.defaultOperation]);
       for (const op of Object.values(usage.operations)) {
-        expect(op.paths.length, usage.label).toBeGreaterThan(0);
+        // A usage found through a parameter value (the prompt ID) calls no listed path itself.
+        if (!usage.requires) expect(op.paths.length, usage.label).toBeGreaterThan(0);
         for (const path of op.paths) expect(endpoint.paths, usage.label).toContain(path);
       }
       expect(usage.parameter === undefined, usage.label).toBe(usage.value === undefined);
@@ -93,7 +100,8 @@ describe('sunset registry', () => {
     expect(usages.map(({ endpoint, usage }) => [endpoint.id, usage.nodeType, usage.minTypeVersion, usage.maxTypeVersion, usage.value])).toEqual([
       ['assistants-api', '@n8n/n8n-nodes-langchain.openAi', undefined, 1.8, 'assistant'],
       ['assistants-api', '@n8n/n8n-nodes-langchain.openAiAssistant', undefined, undefined, undefined],
-      ['videos-api', '@n8n/n8n-nodes-langchain.openAi', 2, undefined, 'video'],
+      ['videos-api', '@n8n/n8n-nodes-langchain.openAi', 2, 2.3, 'video'],
+      ['prompts-api', '@n8n/n8n-nodes-langchain.openAi', 2, 2.3, 'text'],
     ]);
   });
 

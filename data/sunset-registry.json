@@ -24,6 +24,16 @@
       "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
       "accessed": "2026-10-01"
     },
+    "openai-prompts-migration": {
+      "title": "OpenAI \"Migrate from prompt objects\" guide (Responses calls with prompt: {id: \"pmpt_...\"} are the usage to migrate away from)",
+      "url": "https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object",
+      "accessed": "2026-10-01"
+    },
+    "openai-cookbook-legacy-ft": {
+      "title": "OpenAI Cookbook, legacy fine-tuning example (model IDs of the form curie:ft-<org>-<timestamp>)",
+      "url": "https://github.com/openai/openai-cookbook/blob/2182005bcaf5a5cdd96bb46fb9995d08730e7b91/examples/fine-tuned_qa/olympics-3-train-qa.ipynb",
+      "accessed": "2026-10-01"
+    },
     "n8n-openai-assistant-node": {
       "title": "n8n OpenAI Assistant node source at n8n@2.41.5 (versions, the \"mode\" parameter, and its Assistants API calls)",
       "url": "https://github.com/n8n-io/n8n/blob/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts",
@@ -62,7 +72,7 @@
       "date": "2026-10",
       "datePrecision": "month",
       "verification": "verified",
-      "note": "The docs page says n8n 3.0 is \"scheduled for October 2026\"; no exact day is published (checked 2026-10-01, when the latest stable release was n8n@2.41.5). For date math the scanner uses the first day of the month.",
+      "note": "n8n 3.0 changes take effect when you upgrade, not on a calendar date: self-hosted instances keep running 2.x until upgraded. The docs page says 3.0 is \"scheduled for October 2026\" (no exact day; checked 2026-10-01, when the latest stable release was n8n@2.41.5). That date is informational only; n8n findings are labeled \"on upgrade to n8n 3.0\" and only count toward the exit code with --target 3.0.",
       "sources": [
         "n8n-v3-breaking-changes"
       ]
@@ -267,7 +277,7 @@
         "displayName": "OpenAI Assistant",
         "severity": "breaking",
         "replacement": "OpenAI node version 2: the Text resource's \"Message a Model\" operation (Responses API) or the Conversation resource (Conversations API)",
-        "note": "It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). The n8n docs suggest the OpenAI node's \"Assistant\" resource instead, but that resource calls the same Assistants API, so the replacement here is the OpenAI node version 2.",
+        "note": "It already fails today: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). The n8n docs suggest the OpenAI node's \"Assistant\" resource instead, but that resource calls the same Assistants API, so the replacement here is the OpenAI node version 2.",
         "verification": "verified",
         "sources": [
           "n8n-v3-breaking-changes",
@@ -670,8 +680,8 @@
   },
   "openai": {
     "source": "openai-deprecations",
-    "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix; those matches are reported as unverified.",
-    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, within minTypeVersion and maxTypeVersion when set (a missing typeVersion counts as 1), with the parameter set to the value when one is given. The operation is read from operationParameter (default \"operation\"), falling back to defaultOperation because n8n omits defaults from exports.",
+    "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix and reported as unverified. Legacy fine-tune IDs (<base>:ft-...) match legacyFineTunes. Provider-prefixed IDs (openai/<model>, as used by OpenRouter) match the model after the prefix and are reported as unverified warnings, because the provider runs its own schedule.",
+    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set): in HTTP Request nodes, only in the url field, when it is on api.openai.com or the node uses OpenAI credentials with an expression URL; in Code nodes that mention api.openai.com, only inside api.openai.com URLs or string literals that start with the path. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. objectIdPrefix entries match a quoted object ID with that prefix (for example \"pmpt_...\") in request bodies and code. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, within minTypeVersion and maxTypeVersion when set (a missing typeVersion counts as 1), with the parameter set to the value when one is given (parameterDefault when the export omits it), and the requires path non-empty when set. The operation is read from operationParameter (default \"operation\"), falling back to defaultOperation because n8n omits defaults from exports; operations not listed do not match.",
     "excluded": "Left out because they are not endpoints a workflow calls: Agent Builder (a dashboard product), the 2024 restriction on new fine-tuning training for babbage-002 and davinci-002, and the 2026-05-07 and 2026-07-02 fine-tuning restrictions that only apply to some organizations (noted on the fine-tuning job creation entry).",
     "models": [
       {
@@ -1609,6 +1619,23 @@
         "verification": "verified"
       }
     ],
+    "legacyFineTunes": {
+      "bases": [
+        "ada",
+        "babbage",
+        "curie",
+        "davinci"
+      ],
+      "shutdownDate": "2024-01-04",
+      "replacement": "Fine-tune a current base model with /v1/fine_tuning/jobs",
+      "announcement": "2023-08-22: Fine-tunes endpoint",
+      "note": "The deprecations page says the /v1/fine-tunes API \"along with legacy models (including those fine-tuned with the /v1/fine-tunes API) will be shut down on January 04, 2024\". The ID format comes from OpenAI's cookbook.",
+      "verification": "verified",
+      "sources": [
+        "openai-deprecations",
+        "openai-cookbook-legacy-ft"
+      ]
+    },
     "endpoints": [
       {
         "id": "assistants-api",
@@ -1722,6 +1749,7 @@
             "nodeType": "@n8n/n8n-nodes-langchain.openAi",
             "label": "OpenAI node, \"Video\" resource",
             "minTypeVersion": 2,
+            "maxTypeVersion": 2.3,
             "parameter": "resource",
             "value": "video",
             "defaultOperation": "generate",
@@ -1744,15 +1772,42 @@
       },
       {
         "id": "prompts-api",
-        "label": "the reusable prompts API",
+        "label": "reusable prompt objects",
         "paths": [
           "/v1/prompts"
         ],
         "shutdownDate": "2026-11-30",
+        "objectIdPrefix": "pmpt_",
         "replacement": "Move reusable prompt content into your application code (see OpenAI's \"Migrate from prompt objects\" guide)",
         "announcement": "2026-06-03: Reusable prompts",
         "sources": [
-          "openai-deprecations"
+          "openai-deprecations",
+          "openai-prompts-migration"
+        ],
+        "nodeUsages": [
+          {
+            "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+            "label": "OpenAI node, \"Message a Model\" prompt option",
+            "minTypeVersion": 2,
+            "maxTypeVersion": 2.3,
+            "parameter": "resource",
+            "value": "text",
+            "parameterDefault": "text",
+            "defaultOperation": "response",
+            "operations": {
+              "response": {
+                "name": "Message a Model",
+                "paths": []
+              }
+            },
+            "requires": "options.promptConfig.promptOptions.promptId",
+            "matchedLabel": "prompt object",
+            "note": "Type versions 2 to 2.3: the Text resource's \"Message a Model\" operation has a \"Prompt\" option (options.promptConfig) whose Prompt ID is sent to the Responses API as body.prompt.id.",
+            "verification": "verified",
+            "sources": [
+              "n8n-openai-node"
+            ]
+          }
         ],
         "verification": "verified"
       },

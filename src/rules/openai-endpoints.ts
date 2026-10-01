@@ -3,28 +3,25 @@ import type { OpenAiEndpoint, Registry } from '../registry.js';
 import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
-import { CODE_TYPES, HTTP_WHERE, isOpenAiHttpNode, mentionsOpenAiHost, OPENAI_HOST } from './openai.js';
+import { CODE_TYPES, HTTP_WHERE, isOpenAiHttpNode, mentionsOpenAiHost, quotedTokens } from './openai.js';
 
 const CODE_WHERE = 'Code node source';
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const tailFor = (exact: boolean) => (exact ? '(?![A-Za-z0-9_/-])' : '(?![A-Za-z0-9_-])');
 
-/** Blanks out URLs on other hosts, so another API's /v1/search is not reported. */
-function withoutForeignUrls(text: string): string {
-  return text.replace(/https?:\/\/([^/\s'"`?#\\]+)[^\s'"`\\]*/g, (url, host: string) =>
-    host.toLowerCase() === OPENAI_HOST ? url : ' '.repeat(url.length),
-  );
+/** "/v1/threads" in an HTTP Request url field; also "/threads" right after an expression ("={{ $vars.BASE }}/threads"). */
+function urlFieldPatterns(path: string, exact: boolean): RegExp[] {
+  const tail = tailFor(exact);
+  return [
+    new RegExp(`${escapeRegExp(path)}${tail}`),
+    new RegExp(`(?<=\\}\\}\\s*)${escapeRegExp(path.replace(/^\/v1(?=\/)/, ''))}${tail}`),
+  ];
 }
 
-/**
- * "/v1/threads" also matches "/v1/threads/abc/runs" unless the entry is exact. The unversioned
- * form ("/threads") only counts right after an expression, as in "={{ $vars.OPENAI_BASE }}/threads".
- */
-function pathPattern(path: string, exact: boolean, versioned: boolean): RegExp {
-  const tail = exact ? '(?![A-Za-z0-9_/-])' : '(?![A-Za-z0-9_-])';
-  return versioned
-    ? new RegExp(`${escapeRegExp(path)}${tail}`)
-    : new RegExp(`(?<=\\}\\}\\s*)${escapeRegExp(path.replace(/^\/v1(?=\/)/, ''))}${tail}`);
+/** In code: "/v1/threads" only inside an api.openai.com URL (any port) or a string literal that starts with it. */
+function codePattern(path: string, exact: boolean): RegExp {
+  return new RegExp(`(?<=api\\.openai\\.com(?::\\d+)?|['"\`])${escapeRegExp(path)}${tailFor(exact)}`, 'i');
 }
 
 /** The HTTP method of an HTTP Request node, or undefined when an expression sets it. */
@@ -35,6 +32,10 @@ function httpMethod(node: WorkflowNode): string | undefined {
   return typeof method === 'string' && !method.startsWith('=') ? method.toUpperCase() : undefined;
 }
 
+const rootKey = (leaf: StringLeaf) => leaf.path.split(/[.[]/)[0]!;
+const HTTP_HEADER_KEYS = new Set(['headerParameters', 'jsonHeaders']);
+const HTTP_BODY_KEYS = new Set(['jsonBody', 'body', 'jsonQuery', 'bodyParameters']);
+
 function headerLeaves(leaves: StringLeaf[], header: { name: string; value: string }): StringLeaf[] {
   const name = header.name.toLowerCase();
   if (!leaves.some((leaf) => leaf.value.toLowerCase().includes(name))) return [];
@@ -42,11 +43,29 @@ function headerLeaves(leaves: StringLeaf[], header: { name: string; value: strin
   return leaves.filter((leaf) => value.test(leaf.value));
 }
 
-interface Hit {
-  endpoint: OpenAiEndpoint;
-  matched: string[];
-  paths: string[];
-  unverifiedNote?: string;
+/** Drops entries covered by a shorter one: "/v1/threads/runs" next to "/v1/threads", or "a.b" next to "a". */
+export function dedupeOverlapping(items: string[]): string[] {
+  const unique = [...new Set(items)];
+  return unique.filter((item) => !unique.some((other) => other !== item && /^[/.[]/.test(item.slice(other.length)) && item.startsWith(other)));
+}
+
+/** Reads a dotted parameter path; fixed collections may be stored as an object or a one-item array. */
+function getParam(params: Record<string, unknown>, path: string): unknown {
+  let value: unknown = params;
+  for (const key of path.split('.')) {
+    if (Array.isArray(value)) value = value[0];
+    if (typeof value !== 'object' || value === null) return undefined;
+    value = (value as Record<string, unknown>)[key];
+  }
+  return value;
+}
+
+function endpointMessage(endpoint: OpenAiEndpoint, what: string, asOf: string, via?: string): string {
+  const past = endpoint.shutdownDate <= asOf;
+  let message = `OpenAI ${past ? 'has shut down' : 'shuts down'} ${what}`;
+  if (via) message += `, which this node's "${via}" operation ${endpoint.objectIdPrefix && what.includes(endpoint.objectIdPrefix) ? 'uses' : 'calls'}`;
+  message += `; calls ${past ? 'fail' : 'will fail'}.`;
+  return endpoint.note ? `${message} ${endpoint.note}` : message;
 }
 
 /** n8n nodes that call a deprecated endpoint themselves, such as the OpenAI node's "Assistant" resource. */
@@ -58,35 +77,43 @@ function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): 
     for (const usage of endpoint.nodeUsages ?? []) {
       if (node.type !== usage.nodeType) continue;
       if ((usage.minTypeVersion !== undefined && version < usage.minTypeVersion) || (usage.maxTypeVersion !== undefined && version > usage.maxTypeVersion)) continue;
-      if (usage.parameter !== undefined && params[usage.parameter] !== usage.value) continue;
+      if (usage.parameter !== undefined && (params[usage.parameter] ?? usage.parameterDefault) !== usage.value) continue;
       const operationParameter = usage.operationParameter ?? 'operation';
       const value = params[operationParameter];
-      const operation = typeof value === 'string' ? value : usage.defaultOperation;
-      const known = usage.operations[operation];
-      const path = [...new Set(known?.paths ?? Object.values(usage.operations).flatMap((op) => op.paths))].join(', ');
-      const past = endpoint.shutdownDate <= asOf;
-      let message =
-        `OpenAI ${past ? 'has shut down' : 'shuts down'} ${endpoint.label} (${path}), ` +
-        `which this node's "${known?.name ?? operation}" operation calls; calls ${past ? 'fail' : 'will fail'}.`;
-      if (endpoint.note) message += ` ${endpoint.note}`;
+      const known = usage.operations[typeof value === 'string' ? value : usage.defaultOperation];
+      if (!known) continue;
+      let required: string | undefined;
+      if (usage.requires) {
+        const found = getParam(params, usage.requires);
+        if (typeof found !== 'string' || found.trim() === '' || found.trim() === '=') continue;
+        required = found.trim();
+      }
+      const shown = required !== undefined ? `${usage.matchedLabel ?? usage.requires} ${required}` : dedupeOverlapping(known.paths).join(', ');
+      const what = `${endpoint.label} (${shown})`;
       const note = usage.verification === 'unverified' ? usage.verificationNote : endpoint.verification === 'unverified' ? endpoint.verificationNote : undefined;
       findings.push({
         category: 'openai-endpoint',
         ruleId: 'openai/endpoint-shutdown',
         severity: 'breaking',
-        message,
-        date: endpoint.shutdownDate,
-        datePrecision: 'day',
+        message: endpointMessage(endpoint, what, asOf, known.name),
+        trigger: { kind: 'date', date: endpoint.shutdownDate },
         replacement: usage.replacement ?? endpoint.replacement ?? 'None listed by OpenAI',
         verification: note ? 'unverified' : 'verified',
         ...(note ? { verificationNote: note } : {}),
         sources: sourceUrls(registry, [...endpoint.sources, ...usage.sources]),
-        endpoint: path,
-        locations: [`${usage.label}: ${usage.parameter ?? operationParameter}`],
+        endpoint: shown,
+        locations: [`${usage.label}: ${usage.requires ?? usage.parameter ?? operationParameter}`],
       });
     }
   }
   return findings;
+}
+
+interface Hit {
+  endpoint: OpenAiEndpoint;
+  matched: string[];
+  paths: string[];
+  unverifiedNote?: string;
 }
 
 export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
@@ -97,26 +124,34 @@ export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asO
   if (!isHttp && !isCode) return usageFindings;
   const where = isHttp ? HTTP_WHERE : CODE_WHERE;
 
+  // Where each kind of evidence may come from.
+  const urlLeaves = isHttp ? leaves.filter((leaf) => leaf.path === 'url') : leaves;
+  const headerSource = isHttp ? leaves.filter((leaf) => HTTP_HEADER_KEYS.has(rootKey(leaf))) : leaves;
+  const bodySource = isHttp ? leaves.filter((leaf) => HTTP_BODY_KEYS.has(rootKey(leaf))) : leaves;
+
   const hits = new Map<string, Hit>();
   const add = (endpoint: OpenAiEndpoint, matched: string, path: string, unverifiedNote?: string) => {
     const hit = hits.get(endpoint.id) ?? { endpoint, matched: [], paths: [] };
-    if (!hit.matched.includes(matched)) hit.matched.push(matched);
-    if (!hit.paths.includes(path)) hit.paths.push(path);
+    hit.matched.push(matched);
+    hit.paths.push(path);
     hit.unverifiedNote ??= unverifiedNote;
     hits.set(endpoint.id, hit);
   };
 
   for (const endpoint of registry.openai.endpoints) {
     if (endpoint.header) {
-      for (const leaf of headerLeaves(leaves, endpoint.header)) add(endpoint, `${endpoint.header.name}: ${endpoint.header.value}`, leaf.path);
-      continue;
+      for (const leaf of headerLeaves(headerSource, endpoint.header)) add(endpoint, `${endpoint.header.name}: ${endpoint.header.value}`, leaf.path);
+    }
+    if (endpoint.objectIdPrefix) {
+      for (const leaf of bodySource) {
+        for (const id of quotedTokens(leaf.value).filter((token) => token.startsWith(endpoint.objectIdPrefix!))) add(endpoint, `prompt object ${id}`, leaf.path);
+      }
     }
     for (const path of endpoint.paths ?? []) {
-      const versioned = pathPattern(path, endpoint.exactPath === true, true);
-      const bare = pathPattern(path, endpoint.exactPath === true, false);
-      for (const leaf of leaves) {
-        const text = withoutForeignUrls(leaf.value);
-        if (!versioned.test(text) && !(isHttp && leaf.key === 'url' && bare.test(text))) continue;
+      const exact = endpoint.exactPath === true;
+      const patterns = isHttp ? urlFieldPatterns(path, exact) : [codePattern(path, exact)];
+      for (const leaf of urlLeaves) {
+        if (!patterns.some((pattern) => pattern.test(leaf.value))) continue;
         let unverifiedNote: string | undefined;
         if (endpoint.method) {
           const method = isHttp ? httpMethod(node) : undefined;
@@ -131,25 +166,21 @@ export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asO
   }
 
   const pathFindings = [...hits.values()].map(({ endpoint, matched, paths, unverifiedNote }) => {
-    const past = endpoint.shutdownDate <= asOf;
-    const shown = matched.join(', ');
+    const shown = dedupeOverlapping(matched).join(', ');
     const what = endpoint.label.includes(shown) ? endpoint.label : `${endpoint.label} (${shown})`;
-    let message = `OpenAI ${past ? 'has shut down' : 'shuts down'} ${what}; calls ${past ? 'fail' : 'will fail'}.`;
-    if (endpoint.note) message += ` ${endpoint.note}`;
     const note = unverifiedNote ?? (endpoint.verification === 'unverified' ? endpoint.verificationNote : undefined);
     return {
       category: 'openai-endpoint',
       ruleId: 'openai/endpoint-shutdown',
       severity: 'breaking',
-      message,
-      date: endpoint.shutdownDate,
-      datePrecision: 'day',
+      message: endpointMessage(endpoint, what, asOf),
+      trigger: { kind: 'date', date: endpoint.shutdownDate },
       replacement: endpoint.replacement ?? 'None listed by OpenAI',
       verification: note ? 'unverified' : 'verified',
       ...(note ? { verificationNote: note } : {}),
       sources: sourceUrls(registry, endpoint.sources),
       endpoint: shown,
-      locations: paths.map((path) => `${where}: ${path}`),
+      locations: dedupeOverlapping(paths).map((path) => `${where}: ${path}`),
     } satisfies RuleFinding;
   });
   return [...usageFindings, ...pathFindings];

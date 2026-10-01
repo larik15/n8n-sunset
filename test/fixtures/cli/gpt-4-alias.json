@@ -1,0 +1,15 @@
+{
+  "id": "wf-cli-gpt4",
+  "name": "One GPT-4 node",
+  "nodes": [
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4", "mode": "list" }, "options": {} },
+      "id": "1",
+      "name": "GPT-4 chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    }
+  ],
+  "connections": {}
+}

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-export type Severity = 'breaking' | 'behavior-change' | 'info';
+/** breaking and behavior-change are confirmed; warning means "may break, needs review" and never fails CI. */
+export type Severity = 'breaking' | 'behavior-change' | 'warning' | 'info';
 export type Verification = 'verified' | 'unverified';
 export type DatePrecision = 'day' | 'month';
 
@@ -64,6 +65,12 @@ export interface OpenAiNodeUsage {
   /** When set, only nodes with this parameter set to this value match. */
   parameter?: string;
   value?: string;
+  /** Value of `parameter` when the export leaves it out (n8n omits defaults). */
+  parameterDefault?: string;
+  /** Dotted parameter path that must be set (non-empty) for the usage to apply. */
+  requires?: string;
+  /** Names what was found, followed by the value at `requires`, e.g. "prompt object pmpt_123". */
+  matchedLabel?: string;
   /** Parameter that selects the operation (default "operation"). */
   operationParameter?: string;
   /** Operation used when the workflow JSON leaves it out (n8n omits defaults). */
@@ -88,6 +95,8 @@ export interface OpenAiEndpoint {
   method?: string;
   /** A request header that selects the deprecated API, e.g. OpenAI-Beta: realtime=v1. */
   header?: { name: string; value: string };
+  /** Quoted object IDs with this prefix (e.g. "pmpt_") in request bodies or code also count as using the endpoint. */
+  objectIdPrefix?: string;
   nodeUsages?: OpenAiNodeUsage[];
   shutdownDate: string;
   replacement: string | null;
@@ -95,6 +104,17 @@ export interface OpenAiEndpoint {
   note?: string;
   verification: Verification;
   verificationNote?: string;
+  sources: string[];
+}
+
+/** Models fine-tuned with the legacy /v1/fine-tunes API, e.g. curie:ft-acme-2021-08-23-17-54-10. */
+export interface LegacyFineTunes {
+  bases: string[];
+  shutdownDate: string;
+  replacement: string;
+  announcement: string;
+  note: string;
+  verification: Verification;
   sources: string[];
 }
 
@@ -120,6 +140,7 @@ export interface Registry {
     endpointMatching: string;
     excluded: string;
     models: OpenAiModel[];
+    legacyFineTunes: LegacyFineTunes;
     endpoints: OpenAiEndpoint[];
   };
 }

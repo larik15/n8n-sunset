@@ -1,0 +1,53 @@
+{
+  "id": "wf-id-formats",
+  "name": "Model ID formats",
+  "nodes": [
+    {
+      "parameters": { "model": "openai/gpt-4", "options": {} },
+      "id": "1",
+      "name": "OpenRouter chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "jsCode": "const body = { model: 'openai/gpt-3.5-turbo', messages: $json.messages };\nreturn [{ json: body }];" },
+      "id": "2",
+      "name": "Provider-prefixed in code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "resource": "text", "model": "curie:ft-acme-2021-08-23-17-54-10", "prompt": "={{ $json.question }}" },
+      "id": "3",
+      "name": "Legacy fine-tune",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"davinci:ft-personal-2022-01-01-00-00-00\", \"prompt\": \"hi\" }"
+      },
+      "id": "4",
+      "name": "Legacy fine-tune over HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "model": "anthropic/claude-sonnet-5-5", "options": {} },
+      "id": "5",
+      "name": "Other provider prefix",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [800, 0]
+    }
+  ],
+  "connections": {}
+}

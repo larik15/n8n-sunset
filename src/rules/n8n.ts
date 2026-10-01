@@ -78,7 +78,8 @@ export const DETECTORS: Record<string, Detector> = {
 
 export function checkN8nNode(node: WorkflowNode, registry: Registry): RuleFinding[] {
   const { release, removedNodes, changes } = registry.n8n;
-  const base = { category: 'n8n-3.0' as const, date: release.date, datePrecision: release.datePrecision };
+  // n8n 3.0 changes apply when the instance is upgraded, not on a calendar date.
+  const base = { category: 'n8n-3.0' as const, trigger: { kind: 'upgrade' as const, version: release.version } };
   const findings: RuleFinding[] = [];
 
   const removed = removedNodes.find((entry) => entry.type === node.type);

@@ -1,0 +1,84 @@
+{
+  "id": "wf-prompt-objects",
+  "name": "Reusable prompts",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"prompt\": { \"id\": \"pmpt_abc123\", \"version\": \"2\" }, \"input\": \"={{ $json.text }}\" }"
+      },
+      "id": "1",
+      "name": "Responses with prompt object",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://api.openai.com/v1/responses',\n  body: { prompt: { id: 'pmpt_xyz789', variables: { name: $json.name } } },\n});\nreturn [{ json: res }];"
+      },
+      "id": "2",
+      "name": "Prompt object in code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "gpt-5.6-sol", "mode": "list" },
+        "options": { "promptConfig": { "promptOptions": { "promptId": "pmpt_node1", "version": "3" } } }
+      },
+      "id": "3",
+      "name": "Message a Model with prompt",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "response",
+        "options": { "promptConfig": { "promptOptions": [{ "promptId": "pmpt_array" }] } }
+      },
+      "id": "4",
+      "name": "Prompt option stored as array",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "options": { "promptConfig": { "promptOptions": { "promptId": "" } } } },
+      "id": "5",
+      "name": "Empty prompt ID",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "resource": "text", "operation": "classify", "options": { "promptConfig": { "promptOptions": { "promptId": "pmpt_classify" } } } },
+      "id": "6",
+      "name": "Classify operation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"prompt\": { \"id\": \"pmpt_elsewhere\" } }"
+      },
+      "id": "7",
+      "name": "Other host",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {}
+}

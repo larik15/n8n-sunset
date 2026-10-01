@@ -5,7 +5,11 @@
     {
       "parameters": {
         "resource": "video",
-        "modelId": { "__rl": true, "value": "sora-2-pro", "mode": "list" },
+        "modelId": {
+          "__rl": true,
+          "value": "sora-2-pro",
+          "mode": "list"
+        },
         "prompt": "={{ $json.teaser }}",
         "options": {}
       },
@@ -13,32 +17,74 @@
       "name": "Generate teaser",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
-      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
-      "position": [0, 0]
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI"
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
     },
     {
-      "parameters": { "resource": "video", "operation": "generate", "prompt": "A product shot" },
+      "parameters": {
+        "resource": "video",
+        "operation": "generate",
+        "prompt": "A product shot"
+      },
       "id": "2",
       "name": "Generate with explicit operation",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2,
-      "position": [200, 0]
+      "position": [
+        200,
+        0
+      ]
     },
     {
-      "parameters": { "resource": "image", "operation": "generate", "prompt": "A product shot" },
+      "parameters": {
+        "resource": "image",
+        "operation": "generate",
+        "prompt": "A product shot"
+      },
       "id": "3",
       "name": "Generate image",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
-      "position": [400, 0]
+      "position": [
+        400,
+        0
+      ]
     },
     {
-      "parameters": { "resource": "video", "prompt": "A product shot" },
+      "parameters": {
+        "resource": "video",
+        "prompt": "A product shot"
+      },
       "id": "4",
       "name": "Version 1 node",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
-      "position": [600, 0]
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "prompt": "A product shot"
+      },
+      "id": "5",
+      "name": "Future version 2.4",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.4,
+      "position": [
+        800,
+        0
+      ]
     }
   ],
   "connections": {}

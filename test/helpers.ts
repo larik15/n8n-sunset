@@ -14,9 +14,9 @@ export function fixture(path: string): string {
   return fileURLToPath(new URL(`./fixtures/${path}`, import.meta.url));
 }
 
-export function scanFixture(path: string, options: { asOf?: string; windowDays?: number } = {}): ScanResult {
+export function scanFixture(path: string, options: { asOf?: string; windowDays?: number; targets?: string[] } = {}): ScanResult {
   const { workflows } = loadWorkflows([fixture(path)]);
-  return scanWorkflows(workflows, registry, { asOf: options.asOf ?? AS_OF, windowDays: options.windowDays ?? 30 });
+  return scanWorkflows(workflows, registry, { asOf: options.asOf ?? AS_OF, windowDays: options.windowDays ?? 30, targets: options.targets ?? [] });
 }
 
 export function byNode(result: ScanResult, node: string) {

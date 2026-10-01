@@ -1,5 +1,5 @@
 import type { RuleFinding } from '../findings.js';
-import type { OpenAiModel, Registry } from '../registry.js';
+import type { LegacyFineTunes, OpenAiModel, Registry, Severity } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
 import { STICKY_NOTE } from './n8n.js';
@@ -8,15 +8,18 @@ export interface ModelIndex {
   exact: Map<string, { entry: OpenAiModel; alias: boolean }>;
   families: Map<string, OpenAiModel>;
   fineTunes: OpenAiModel[];
+  legacyFineTunes?: { pattern: RegExp; entry: OpenAiModel };
 }
 
 export interface ModelMatch {
   token: string;
   entry: OpenAiModel;
-  kind: 'exact' | 'alias' | 'dated-snapshot' | 'fine-tune';
+  kind: 'exact' | 'alias' | 'dated-snapshot' | 'fine-tune' | 'legacy-fine-tune' | 'provider-prefixed';
+  /** For provider-prefixed IDs: the match for the part after "openai/". */
+  inner?: ModelMatch;
 }
 
-export function buildModelIndex(models: OpenAiModel[]): ModelIndex {
+export function buildModelIndex(models: OpenAiModel[], legacy?: LegacyFineTunes): ModelIndex {
   const index: ModelIndex = { exact: new Map(), families: new Map(), fineTunes: [] };
   for (const entry of models) {
     index.exact.set(entry.id, { entry, alias: false });
@@ -25,8 +28,23 @@ export function buildModelIndex(models: OpenAiModel[]): ModelIndex {
     if (entry.fineTuneOf) index.fineTunes.push(entry);
   }
   index.fineTunes.sort((a, b) => b.fineTuneOf!.length - a.fineTuneOf!.length);
+  if (legacy) {
+    index.legacyFineTunes = {
+      pattern: new RegExp(`^(${legacy.bases.join('|')}):ft-[A-Za-z0-9-]+$`),
+      entry: {
+        id: '<base>:ft-…',
+        shutdownDate: legacy.shutdownDate,
+        replacement: legacy.replacement,
+        announcement: legacy.announcement,
+        verification: legacy.verification,
+        note: legacy.note,
+      },
+    };
+  }
   return index;
 }
+
+const PROVIDER_PREFIX = 'openai/';
 
 export function matchModelId(token: string, index: ModelIndex): ModelMatch | undefined {
   const hit = index.exact.get(token);
@@ -45,6 +63,15 @@ export function matchModelId(token: string, index: ModelIndex): ModelMatch | und
     const baseMatch = matchModelId(base, index);
     if (baseMatch) return { token, entry: baseMatch.entry, kind: 'fine-tune' };
   }
+
+  // Legacy /v1/fine-tunes models look like curie:ft-acme-2021-08-23-17-54-10.
+  if (index.legacyFineTunes?.pattern.test(token)) return { token, entry: index.legacyFineTunes.entry, kind: 'legacy-fine-tune' };
+
+  // OpenRouter and similar providers name OpenAI models openai/<model>.
+  if (token.startsWith(PROVIDER_PREFIX)) {
+    const inner = matchModelId(token.slice(PROVIDER_PREFIX.length), index);
+    if (inner && inner.kind !== 'provider-prefixed') return { token, entry: inner.entry, kind: 'provider-prefixed', inner };
+  }
   return undefined;
 }
 
@@ -60,32 +87,70 @@ export const HTTP_TYPES = new Set(['n8n-nodes-base.httpRequest', 'n8n-nodes-base
 export const OPENAI_HOST = 'api.openai.com';
 export const HTTP_WHERE = `HTTP Request to ${OPENAI_HOST}`;
 
+/** The literal host of a URL ("api.openai.com" for "https://api.openai.com:443/v1"), or undefined when an expression sets it. */
+export function urlHost(text: string): string | undefined {
+  const m = /^=?\s*[a-z][a-z0-9+.-]*:\/\/(?:[^@/\s?#]*@)?([^/\s?#:{}]+)(?::\d+)?(?=[/?#\s]|$)/i.exec(text.trim());
+  return m ? m[1]!.toLowerCase() : undefined;
+}
+
+export function isOpenAiHost(host: string | undefined): boolean {
+  return host === OPENAI_HOST;
+}
+
 export function mentionsOpenAiHost(node: WorkflowNode): boolean {
   return [...stringLeaves(node.parameters)].some((leaf) => leaf.value.includes(OPENAI_HOST));
 }
 
-/** An HTTP Request node whose URL is on api.openai.com, or that authenticates with OpenAI credentials. */
+/**
+ * An HTTP Request node that calls OpenAI: its url field is on api.openai.com, or the URL comes
+ * from an expression and the node authenticates with OpenAI credentials or mentions api.openai.com.
+ */
 export function isOpenAiHttpNode(node: WorkflowNode): boolean {
-  return HTTP_TYPES.has(node.type) && (node.credentials?.openAiApi !== undefined || mentionsOpenAiHost(node));
+  if (!HTTP_TYPES.has(node.type)) return false;
+  const url = node.parameters?.url;
+  const host = typeof url === 'string' ? urlHost(url) : undefined;
+  if (host !== undefined) return isOpenAiHost(host);
+  return node.credentials?.openAiApi !== undefined || (typeof url === 'string' && url.includes(OPENAI_HOST));
 }
 
-type Strategy = { kind: 'http' | 'llm' | 'code' | 'other'; where: string };
+/** A base URL that sends an OpenAI node's requests somewhere other than api.openai.com. */
+function customBaseUrl(node: WorkflowNode): string | undefined {
+  const options = node.parameters?.options;
+  const baseURL = typeof options === 'object' && options !== null ? (options as Record<string, unknown>).baseURL : undefined;
+  if (typeof baseURL !== 'string' || baseURL.trim() === '') return undefined;
+  return isOpenAiHost(urlHost(baseURL)) ? undefined : baseURL;
+}
+
+type Strategy = { kind: 'http' | 'llm' | 'code' | 'other'; where: string; warning?: string };
+
+const OTHER_NOTE =
+  'Found in a field named "model" on a node that is not an OpenAI node, so it may never be sent to OpenAI. Check how the value is used.';
 
 function strategyFor(node: WorkflowNode): Strategy | null {
   if (node.type === STICKY_NOTE) return null;
   if (CODE_TYPES.has(node.type)) return { kind: 'code', where: 'Code node source' };
   if (isOpenAiHttpNode(node)) return { kind: 'http', where: HTTP_WHERE };
+  if (HTTP_TYPES.has(node.type)) return null; // an HTTP request to some other host
   // Azure OpenAI uses deployment names and its own retirement schedule, so it is left out.
   if (/azure/i.test(node.type) || node.credentials?.azureOpenAiApi !== undefined) return null;
-  if (/openai/i.test(node.type) || node.credentials?.openAiApi !== undefined) return { kind: 'llm', where: 'OpenAI node parameter' };
-  return { kind: 'other', where: 'parameter named "model"' };
+  if (/openai/i.test(node.type) || node.credentials?.openAiApi !== undefined) {
+    const base = customBaseUrl(node);
+    return base
+      ? {
+          kind: 'llm',
+          where: 'OpenAI node parameter',
+          warning: `This node sends requests to ${base}, not api.openai.com, so the model may be served by another provider on its own schedule.`,
+        }
+      : { kind: 'llm', where: 'OpenAI node parameter' };
+  }
+  return { kind: 'other', where: 'parameter named "model"', warning: OTHER_NOTE };
 }
 
-const TOKEN = /[A-Za-z0-9][A-Za-z0-9._:-]*/g;
+const TOKEN = /(?:openai\/)?[A-Za-z0-9][A-Za-z0-9._:-]*/g;
 const QUOTES = new Set(['"', "'", '`']);
 
 /** Tokens wrapped in quotes, e.g. 'gpt-4' in code or "gpt-4" in a JSON body (escaped quotes included). */
-function quotedTokens(text: string): string[] {
+export function quotedTokens(text: string): string[] {
   const out: string[] = [];
   for (const m of text.matchAll(TOKEN)) {
     const before = text[m.index - 1];
@@ -97,7 +162,6 @@ function quotedTokens(text: string): string[] {
 
 /** Path and query segments of a URL, e.g. ".../realtime?model=gpt-4o-realtime-preview". */
 function urlSegments(text: string): string[] {
-  if (!text.includes('://') && !text.startsWith('/')) return [];
   return text.split(/[/?&=#\s]/).filter(Boolean);
 }
 
@@ -107,28 +171,40 @@ function wholeValue(text: string): string {
   return trimmed.startsWith('=') && !trimmed.includes('{{') ? trimmed.slice(1).trim() : trimmed;
 }
 
-/** A parameter that holds a model: "model", "modelId.value", or a { name: "model", value } pair. */
-function isModelNamed(leaf: StringLeaf): boolean {
-  if (/model/i.test(leaf.path)) return true;
+/** A { name: "model", value } pair, as in body parameters or Edit Fields assignments. */
+function isModelPair(leaf: StringLeaf): boolean {
   const name = (leaf.parent as { name?: unknown } | undefined)?.name;
-  return /value/i.test(leaf.key) && typeof name === 'string' && /model/i.test(name);
+  return /value/i.test(leaf.key) && typeof name === 'string' && /^model$/i.test(name.trim());
 }
 
+/** A parameter that holds a model: "model", "modelId.value", or a { name: "model", value } pair. */
+function isModelNamed(leaf: StringLeaf): boolean {
+  return /model/i.test(leaf.path) || isModelPair(leaf);
+}
+
+/** Request body fields of the HTTP Request node, where model IDs appear as quoted JSON strings. */
+const HTTP_BODY_KEYS = new Set(['jsonBody', 'body', 'jsonQuery']);
+const rootKey = (leaf: StringLeaf) => leaf.path.split(/[.[]/)[0]!;
+
 /**
- * Strings that might be model IDs. Free text (code, prompts) only counts when quoted,
+ * Strings that might be model IDs. Free text (code, request bodies) only counts when quoted,
  * so a variable named o1 or a prompt mentioning davinci is not reported.
  */
 function candidates(leaf: StringLeaf, kind: Strategy['kind']): string[] {
-  const modelNamed = isModelNamed(leaf);
   switch (kind) {
-    case 'http':
-      return [wholeValue(leaf.value), ...quotedTokens(leaf.value), ...urlSegments(leaf.value)];
+    case 'http': {
+      const root = rootKey(leaf);
+      if (leaf.path === 'url') return urlSegments(leaf.value);
+      if (HTTP_BODY_KEYS.has(root)) return quotedTokens(leaf.value);
+      if (/^(bodyParameters|queryParameters)$/.test(root) && isModelPair(leaf)) return [wholeValue(leaf.value)];
+      return [];
+    }
     case 'llm':
-      return modelNamed ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : [wholeValue(leaf.value)];
+      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : [];
     case 'code':
-      return modelNamed ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : quotedTokens(leaf.value);
+      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : quotedTokens(leaf.value);
     case 'other':
-      return modelNamed ? [wholeValue(leaf.value)] : [];
+      return isModelNamed(leaf) ? [wholeValue(leaf.value)] : [];
   }
 }
 
@@ -137,11 +213,15 @@ function describe(match: ModelMatch): string {
   if (kind === 'alias') return `"${token}" (alias of ${entry.id})`;
   if (kind === 'dated-snapshot') return `"${token}" (snapshot of ${entry.id})`;
   if (kind === 'fine-tune') return `"${token}" (fine-tune matched to ${entry.id})`;
+  if (kind === 'legacy-fine-tune') return `"${token}" (legacy /v1/fine-tunes model)`;
+  if (kind === 'provider-prefixed') return `"${token}" (provider name for ${match.inner!.token})`;
   return `"${token}"`;
 }
 
 const FINE_TUNE_NOTE =
   'Fine-tuned model ID matched to the deprecations page by its base model. The page states that inference on fine-tuned models stops when the underlying base model is deprecated, but does not list individual fine-tuned IDs.';
+const PROVIDER_NOTE =
+  'Provider-prefixed model ID (openai/<model>, as used by OpenRouter). OpenAI\'s date applies to OpenAI\'s API; the provider decides when its own route stops working.';
 
 export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index: ModelIndex, asOf: string): RuleFinding[] {
   const strategy = strategyFor(node);
@@ -161,24 +241,33 @@ export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index:
 
   const source = registry.sources[registry.openai.source];
   if (!source) throw new Error(`Registry references unknown source "${registry.openai.source}"`);
+  const legacySources = registry.openai.legacyFineTunes.sources.map((key) => registry.sources[key]?.url ?? key);
 
   return [...matches.values()].map(({ match, paths }) => {
     const { entry } = match;
     const past = entry.shutdownDate <= asOf;
-    const unverifiedNote = match.kind === 'fine-tune' ? FINE_TUNE_NOTE : entry.verification === 'unverified' ? entry.verificationNote : undefined;
+    // A warning is a possible break that needs review; it never sets the exit code.
+    const warning = strategy.warning ?? (match.kind === 'provider-prefixed' ? PROVIDER_NOTE : undefined);
+    const unverifiedNote =
+      warning ??
+      (match.kind === 'fine-tune' || match.inner?.kind === 'fine-tune'
+        ? FINE_TUNE_NOTE
+        : entry.verification === 'unverified'
+          ? entry.verificationNote
+          : undefined);
+    const severity: Severity = warning ? 'warning' : 'breaking';
     return {
       category: 'openai-model',
       ruleId: 'openai/model-shutdown',
-      severity: 'breaking',
+      severity,
       message: past
         ? `OpenAI has shut down model ${describe(match)}; API calls fail.`
         : `OpenAI shuts down model ${describe(match)}; API calls will fail.`,
-      date: entry.shutdownDate,
-      datePrecision: 'day',
+      trigger: { kind: 'date', date: entry.shutdownDate },
       replacement: entry.replacement ?? 'None listed by OpenAI',
       verification: unverifiedNote ? 'unverified' : 'verified',
       ...(unverifiedNote ? { verificationNote: unverifiedNote } : {}),
-      sources: [source.url],
+      sources: match.kind === 'legacy-fine-tune' ? legacySources : [source.url],
       model: match.token,
       locations: paths.map((path) => `${strategy.where}: ${path}`),
     } satisfies RuleFinding;

@@ -17,7 +17,6 @@ describe('HTTP Request nodes calling deprecated OpenAI endpoints', () => {
       workflow: 'Assistant support bot',
       endpoint: '/v1/threads',
       date: '2026-08-26',
-      datePrecision: 'day',
       withinWindow: true,
       replacement: 'Responses API and Conversations API',
       verification: 'verified',
@@ -150,6 +149,7 @@ describe('n8n OpenAI node, "Video" resource', () => {
   it('leaves other resources and version 1 alone', () => {
     expect(endpointFindings(result, 'Generate image')).toEqual([]);
     expect(endpointFindings(result, 'Version 1 node')).toEqual([]);
+    expect(endpointFindings(result, 'Future version 2.4')).toEqual([]);
   });
 });
 
@@ -184,11 +184,11 @@ describe('OpenAI Assistant node', () => {
   it('lists the already-broken finding first, then the n8n 3.0 removal, which points back to it', () => {
     for (const node of ['Support assistant', 'New triage assistant']) {
       const findings = byNode(result, node);
-      expect(findings.map((f) => [f.ruleId, f.date]), node).toEqual([
-        ['openai/endpoint-shutdown', '2026-08-26'],
-        ['n8n3/removed-node', '2026-10'],
+      expect(findings.map((f) => [f.ruleId, f.status, f.date]), node).toEqual([
+        ['openai/endpoint-shutdown', 'past', '2026-08-26'],
+        ['n8n3/removed-node', 'on-upgrade', null],
       ]);
-      expect(findings[1]!.message).toContain('It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26');
+      expect(findings[1]!.message).toContain('It already fails today: it calls the Assistants API, which OpenAI shut down on 2026-08-26');
       expect(findings[1]!.replacement).toBe(findings[0]!.replacement);
     }
   });
@@ -222,5 +222,52 @@ describe('Code nodes calling deprecated OpenAI endpoints', () => {
   it('ignores code that does not call OpenAI, and other hosts in code that does', () => {
     expect(endpointFindings(result, 'Other vendor assistants')).toEqual([]);
     expect(endpointFindings(result, 'OpenAI plus other video API')).toEqual([]);
+  });
+});
+
+describe('hosts with a port', () => {
+  it('treats api.openai.com:443 as OpenAI', () => {
+    const result = scanFixture('rules/openai-false-positives.json');
+    expect(endpointFindings(result, 'Assistants with port')).toMatchObject([{ endpoint: '/v1/assistants', date: '2026-08-26' }]);
+  });
+});
+
+describe('reusable prompt objects', () => {
+  const result = scanFixture('rules/openai-prompt-objects.json');
+  const MIGRATION = 'https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object';
+
+  it('flags a prompt object ID in a Responses request body', () => {
+    const [finding] = endpointFindings(result, 'Responses with prompt object');
+    expect(finding).toMatchObject({
+      endpoint: 'prompt object pmpt_abc123',
+      date: '2026-11-30',
+      status: 'upcoming',
+      withinWindow: false,
+      locations: ['HTTP Request to api.openai.com: jsonBody'],
+    });
+    expect(finding!.message).toBe('OpenAI shuts down reusable prompt objects (prompt object pmpt_abc123); calls will fail.');
+    expect(finding!.sources).toContain(MIGRATION);
+  });
+
+  it('flags a prompt object ID in code that calls OpenAI', () => {
+    expect(endpointFindings(result, 'Prompt object in code')).toMatchObject([{ endpoint: 'prompt object pmpt_xyz789' }]);
+  });
+
+  it("flags the OpenAI node's \"Message a Model\" prompt option, with defaults left out of the export", () => {
+    const [finding] = endpointFindings(result, 'Message a Model with prompt');
+    expect(finding).toMatchObject({
+      endpoint: 'prompt object pmpt_node1',
+      locations: ['OpenAI node, "Message a Model" prompt option: options.promptConfig.promptOptions.promptId'],
+    });
+    expect(finding!.message).toBe(
+      "OpenAI shuts down reusable prompt objects (prompt object pmpt_node1), which this node's \"Message a Model\" operation uses; calls will fail.",
+    );
+    expect(endpointFindings(result, 'Prompt option stored as array')).toMatchObject([{ endpoint: 'prompt object pmpt_array' }]);
+  });
+
+  it('ignores an empty prompt ID, other operations and other hosts', () => {
+    expect(endpointFindings(result, 'Empty prompt ID')).toEqual([]);
+    expect(endpointFindings(result, 'Classify operation')).toEqual([]);
+    expect(endpointFindings(result, 'Other host')).toEqual([]);
   });
 });

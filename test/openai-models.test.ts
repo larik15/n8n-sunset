@@ -5,7 +5,7 @@ import { AS_OF, byNode, registry, scanFixture } from './helpers.js';
 const OPENAI_URL = 'https://platform.openai.com/docs/deprecations';
 
 describe('matchModelId', () => {
-  const index = buildModelIndex(registry.openai.models);
+  const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
 
   it('matches model IDs and listed aliases exactly', () => {
     expect(matchModelId('gpt-3.5-turbo-0125', index)).toMatchObject({ kind: 'exact', entry: { shutdownDate: '2026-10-23' } });
@@ -23,6 +23,14 @@ describe('matchModelId', () => {
     expect(matchModelId('gpt-realtime-2025-08-28', index)).toMatchObject({ kind: 'dated-snapshot', entry: { id: 'gpt-realtime' } });
     expect(matchModelId('gpt-realtime-2.1', index)).toBeUndefined();
     expect(matchModelId('gpt-5-2025-08-07', index)).toMatchObject({ kind: 'exact' });
+  });
+
+  it('matches legacy /v1/fine-tunes IDs and provider-prefixed IDs', () => {
+    expect(matchModelId('curie:ft-openai-internal-2021-08-23-17-54-10', index)).toMatchObject({ kind: 'legacy-fine-tune', entry: { shutdownDate: '2024-01-04' } });
+    expect(matchModelId('gpt-4:ft-acme-2021', index)).toBeUndefined();
+    expect(matchModelId('openai/gpt-4', index)).toMatchObject({ kind: 'provider-prefixed', entry: { id: 'gpt-4-0613' }, inner: { kind: 'alias' } });
+    expect(matchModelId('openai/gpt-4o', index)).toBeUndefined();
+    expect(matchModelId('anthropic/gpt-4', index)).toBeUndefined();
   });
 
   it('matches fine-tuned model IDs by base model', () => {
@@ -47,7 +55,9 @@ describe('OpenAI LLM nodes', () => {
       workflow: 'Lead scoring',
       model: 'gpt-4',
       date: '2026-10-23',
-      datePrecision: 'day',
+      trigger: 'date',
+      status: 'upcoming',
+      countsTowardExit: true,
       daysUntil: 22,
       withinWindow: true,
       replacement: 'gpt-5.6-sol',
@@ -148,10 +158,18 @@ describe('matching edge cases', () => {
 describe('other nodes', () => {
   const result = scanFixture('rules/openai-other-nodes.json');
 
-  it('flags a value assigned to a field named "model"', () => {
-    expect(byNode(result, 'Config')).toMatchObject([
-      { model: 'gpt-4', locations: ['parameter named "model": assignments.assignments[0].value'] },
+  it('reports a value assigned to a field named "model" as an unverified warning, not breaking', () => {
+    const findings = byNode(result, 'Config');
+    expect(findings).toMatchObject([
+      {
+        model: 'gpt-4',
+        severity: 'warning',
+        verification: 'unverified',
+        countsTowardExit: false,
+        locations: ['parameter named "model": assignments.assignments[0].value'],
+      },
     ]);
+    expect(findings[0]!.verificationNote).toContain('not an OpenAI node');
   });
 
   it('ignores sticky notes and non-OpenAI model nodes', () => {
@@ -169,5 +187,72 @@ describe('shutdown day itself', () => {
 
   it('pins the as-of date used by the other tests', () => {
     expect(AS_OF).toBe(registry.registryVersion);
+  });
+});
+
+describe('false positives', () => {
+  const result = scanFixture('rules/openai-false-positives.json');
+
+  it('downgrades an OpenAI node with a non-OpenAI base URL to an unverified warning', () => {
+    const [finding] = byNode(result, 'Chat model via OpenRouter');
+    expect(finding).toMatchObject({ model: 'gpt-4', severity: 'warning', verification: 'unverified', countsTowardExit: false });
+    expect(finding!.verificationNote).toContain('https://openrouter.ai/api/v1');
+  });
+
+  it('keeps an explicit api.openai.com base URL as breaking', () => {
+    expect(byNode(result, 'Chat model with explicit OpenAI URL')).toMatchObject([{ model: 'gpt-4', severity: 'breaking', verification: 'verified' }]);
+  });
+
+  it('only reads model IDs from the url field and quoted body text of HTTP Request nodes', () => {
+    // gpt-4 sits in a header, o1 in an output option, /v1/assistants in prompt text: none of them count.
+    expect(byNode(result, 'Responses call with lookalikes')).toEqual([]);
+  });
+
+  it('ignores HTTP requests to other hosts even with OpenAI credentials', () => {
+    expect(byNode(result, 'Proxy with OpenAI credential')).toEqual([]);
+  });
+
+  it('ignores endpoint paths mentioned in code comments', () => {
+    expect(byNode(result, 'Code mentioning a path in a comment')).toEqual([]);
+  });
+});
+
+describe('model ID formats', () => {
+  const result = scanFixture('rules/openai-id-formats.json');
+
+  it('reports openai/<model> (OpenRouter style) as an unverified warning', () => {
+    const [finding] = byNode(result, 'OpenRouter chat model');
+    expect(finding).toMatchObject({ model: 'openai/gpt-4', severity: 'warning', verification: 'unverified', date: '2026-10-23' });
+    expect(finding!.message).toContain('"openai/gpt-4" (provider name for gpt-4)');
+    expect(byNode(result, 'Provider-prefixed in code')).toMatchObject([{ model: 'openai/gpt-3.5-turbo', severity: 'warning' }]);
+    expect(byNode(result, 'Other provider prefix')).toEqual([]);
+  });
+
+  it('reports legacy /v1/fine-tunes models as breaking, citing the cookbook for the ID format', () => {
+    const [finding] = byNode(result, 'Legacy fine-tune');
+    expect(finding).toMatchObject({
+      model: 'curie:ft-acme-2021-08-23-17-54-10',
+      severity: 'breaking',
+      verification: 'verified',
+      date: '2024-01-04',
+      status: 'past',
+      replacement: 'Fine-tune a current base model with /v1/fine_tuning/jobs',
+    });
+    expect(finding!.sources).toEqual([
+      'https://platform.openai.com/docs/deprecations',
+      'https://github.com/openai/openai-cookbook/blob/2182005bcaf5a5cdd96bb46fb9995d08730e7b91/examples/fine-tuned_qa/olympics-3-train-qa.ipynb',
+    ]);
+    expect(byNode(result, 'Legacy fine-tune over HTTP')).toMatchObject([{ model: 'davinci:ft-personal-2022-01-01-00-00-00', severity: 'breaking' }]);
+  });
+});
+
+describe('workflow and node flags', () => {
+  const result = scanFixture('rules/workflow-flags.json');
+
+  it('shows findings in disabled nodes and inactive or archived workflows, without counting disabled ones', () => {
+    expect(result.findings).toMatchObject([
+      { model: 'gpt-4', severity: 'breaking', nodeDisabled: true, countsTowardExit: false, workflowActive: false, workflowArchived: true },
+    ]);
+    expect(result.summary.exitFindings).toBe(0);
   });
 });
