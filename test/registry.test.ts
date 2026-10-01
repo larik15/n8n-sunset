@@ -83,10 +83,18 @@ describe('sunset registry', () => {
     expect(usages.length).toBeGreaterThan(0);
     for (const { endpoint, usage } of usages) {
       expect(usage.operations, usage.label).toHaveProperty([usage.defaultOperation]);
-      for (const op of Object.values(usage.operations)) expect(endpoint.paths, usage.label).toContain(op.path);
+      for (const op of Object.values(usage.operations)) {
+        expect(op.paths.length, usage.label).toBeGreaterThan(0);
+        for (const path of op.paths) expect(endpoint.paths, usage.label).toContain(path);
+      }
+      expect(usage.parameter === undefined, usage.label).toBe(usage.value === undefined);
       expect(VERIFICATION).toContain(usage.verification);
     }
-    expect(usages[0]!.usage).toMatchObject({ nodeType: '@n8n/n8n-nodes-langchain.openAi', maxTypeVersion: 1.8, parameter: 'resource', value: 'assistant' });
+    expect(usages.map(({ endpoint, usage }) => [endpoint.id, usage.nodeType, usage.minTypeVersion, usage.maxTypeVersion, usage.value])).toEqual([
+      ['assistants-api', '@n8n/n8n-nodes-langchain.openAi', undefined, 1.8, 'assistant'],
+      ['assistants-api', '@n8n/n8n-nodes-langchain.openAiAssistant', undefined, undefined, undefined],
+      ['videos-api', '@n8n/n8n-nodes-langchain.openAi', 2, undefined, 'video'],
+    ]);
   });
 
   it('keeps aliases with their snapshot, as the official page lists them', () => {

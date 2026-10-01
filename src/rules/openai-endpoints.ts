@@ -52,13 +52,18 @@ interface Hit {
 /** n8n nodes that call a deprecated endpoint themselves, such as the OpenAI node's "Assistant" resource. */
 function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
   const params = node.parameters ?? {};
+  const version = node.typeVersion ?? 1;
   const findings: RuleFinding[] = [];
   for (const endpoint of registry.openai.endpoints) {
     for (const usage of endpoint.nodeUsages ?? []) {
-      if (node.type !== usage.nodeType || (node.typeVersion ?? 1) > usage.maxTypeVersion || params[usage.parameter] !== usage.value) continue;
-      const operation = typeof params.operation === 'string' ? params.operation : usage.defaultOperation;
+      if (node.type !== usage.nodeType) continue;
+      if ((usage.minTypeVersion !== undefined && version < usage.minTypeVersion) || (usage.maxTypeVersion !== undefined && version > usage.maxTypeVersion)) continue;
+      if (usage.parameter !== undefined && params[usage.parameter] !== usage.value) continue;
+      const operationParameter = usage.operationParameter ?? 'operation';
+      const value = params[operationParameter];
+      const operation = typeof value === 'string' ? value : usage.defaultOperation;
       const known = usage.operations[operation];
-      const path = known?.path ?? [...new Set(Object.values(usage.operations).map((op) => op.path))].join(', ');
+      const path = [...new Set(known?.paths ?? Object.values(usage.operations).flatMap((op) => op.paths))].join(', ');
       const past = endpoint.shutdownDate <= asOf;
       let message =
         `OpenAI ${past ? 'has shut down' : 'shuts down'} ${endpoint.label} (${path}), ` +
@@ -72,12 +77,12 @@ function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): 
         message,
         date: endpoint.shutdownDate,
         datePrecision: 'day',
-        replacement: usage.replacement,
+        replacement: usage.replacement ?? endpoint.replacement ?? 'None listed by OpenAI',
         verification: note ? 'unverified' : 'verified',
         ...(note ? { verificationNote: note } : {}),
         sources: sourceUrls(registry, [...endpoint.sources, ...usage.sources]),
         endpoint: path,
-        locations: [`${usage.label}: ${usage.parameter}`],
+        locations: [`${usage.label}: ${usage.parameter ?? operationParameter}`],
       });
     }
   }

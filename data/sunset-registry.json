@@ -20,8 +20,18 @@
       "accessed": "2026-10-01"
     },
     "n8n-openai-node": {
-      "title": "n8n OpenAI node source at n8n@2.41.5 (version map in OpenAi.node.ts, Assistant resource in v1/OpenAiV1.node.ts, its API calls in v1/actions/assistant/)",
+      "title": "n8n OpenAI node source at n8n@2.41.5 (version map in OpenAi.node.ts; Assistant resource in v1/OpenAiV1.node.ts and v1/actions/assistant/; Video resource in v2/OpenAiV2.node.ts and v2/actions/video/)",
       "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
+      "accessed": "2026-10-01"
+    },
+    "n8n-openai-assistant-node": {
+      "title": "n8n OpenAI Assistant node source at n8n@2.41.5 (versions, the \"mode\" parameter, and its Assistants API calls)",
+      "url": "https://github.com/n8n-io/n8n/blob/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts",
+      "accessed": "2026-10-01"
+    },
+    "langchain-openai-assistant": {
+      "title": "LangChain OpenAIAssistantRunnable at @langchain/classic@1.0.27, the version n8n@2.41.5 depends on (calls beta.assistants and beta.threads)",
+      "url": "https://github.com/langchain-ai/langchainjs/blob/6b914bceb4acd4664b12091770a2ddcbf5d8457e/libs/langchain-classic/src/experimental/openai_assistant/index.ts",
       "accessed": "2026-10-01"
     },
     "n8n-3x-branch": {
@@ -256,13 +266,15 @@
         "type": "@n8n/n8n-nodes-langchain.openAiAssistant",
         "displayName": "OpenAI Assistant",
         "severity": "breaking",
-        "replacement": "OpenAI node (@n8n/n8n-nodes-langchain.openAi), \"Assistant\" resource",
-        "note": "The OpenAI deprecations page lists the Assistants API itself as shut down on 2026-08-26, so the suggested Assistant resource may not work either.",
+        "replacement": "OpenAI node version 2: the Text resource's \"Message a Model\" operation (Responses API) or the Conversation resource (Conversations API)",
+        "note": "It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). The n8n docs suggest the OpenAI node's \"Assistant\" resource instead, but that resource calls the same Assistants API, so the replacement here is the OpenAI node version 2.",
         "verification": "verified",
         "sources": [
           "n8n-v3-breaking-changes",
           "n8n-source",
-          "n8n-3x-branch"
+          "n8n-3x-branch",
+          "openai-deprecations",
+          "n8n-openai-node"
         ]
       },
       {
@@ -659,7 +671,7 @@
   "openai": {
     "source": "openai-deprecations",
     "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix; those matches are reported as unverified.",
-    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, at or below maxTypeVersion (a missing typeVersion counts as 1), with the parameter set to the value.",
+    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, within minTypeVersion and maxTypeVersion when set (a missing typeVersion counts as 1), with the parameter set to the value when one is given. The operation is read from operationParameter (default \"operation\"), falling back to defaultOperation because n8n omits defaults from exports.",
     "excluded": "Left out because they are not endpoints a workflow calls: Agent Builder (a dashboard product), the 2024 restriction on new fine-tuning training for babbage-002 and davinci-002, and the 2026-05-07 and 2026-07-02 fine-tuning restrictions that only apply to some organizations (noted on the fine-tuning job creation entry).",
     "models": [
       {
@@ -1624,23 +1636,33 @@
             "operations": {
               "create": {
                 "name": "Create an Assistant",
-                "path": "/v1/assistants"
+                "paths": [
+                  "/v1/assistants"
+                ]
               },
               "deleteAssistant": {
                 "name": "Delete an Assistant",
-                "path": "/v1/assistants"
+                "paths": [
+                  "/v1/assistants"
+                ]
               },
               "list": {
                 "name": "List Assistants",
-                "path": "/v1/assistants"
+                "paths": [
+                  "/v1/assistants"
+                ]
               },
               "message": {
                 "name": "Message an Assistant",
-                "path": "/v1/threads"
+                "paths": [
+                  "/v1/threads"
+                ]
               },
               "update": {
                 "name": "Update an Assistant",
-                "path": "/v1/assistants"
+                "paths": [
+                  "/v1/assistants"
+                ]
               }
             },
             "replacement": "OpenAI node version 2: the Text resource's \"Message a Model\" operation (Responses API) or the Conversation resource (Conversations API)",
@@ -1648,6 +1670,35 @@
             "verification": "verified",
             "sources": [
               "n8n-openai-node"
+            ]
+          },
+          {
+            "nodeType": "@n8n/n8n-nodes-langchain.openAiAssistant",
+            "label": "OpenAI Assistant node",
+            "operationParameter": "mode",
+            "defaultOperation": "existing",
+            "operations": {
+              "existing": {
+                "name": "Use Existing Assistant",
+                "paths": [
+                  "/v1/assistants",
+                  "/v1/threads"
+                ]
+              },
+              "new": {
+                "name": "Use New Assistant",
+                "paths": [
+                  "/v1/assistants",
+                  "/v1/threads"
+                ]
+              }
+            },
+            "replacement": "OpenAI node version 2: the Text resource's \"Message a Model\" operation (Responses API) or the Conversation resource (Conversations API)",
+            "note": "Both operations (the \"mode\" parameter, labelled Operation) call /assistants: \"Use Existing Assistant\" updates the assistant's tools with client.beta.assistants.update, and \"Use New Assistant\" creates one with OpenAIAssistantRunnable.createAssistant. The assistant then runs through LangChain's OpenAIAssistantRunnable, which calls client.beta.threads.createAndRun and threads.runs. All type versions (1, 1.1) do this. n8n 3.0 also removes the node.",
+            "verification": "verified",
+            "sources": [
+              "n8n-openai-assistant-node",
+              "langchain-openai-assistant"
             ]
           }
         ],
@@ -1665,6 +1716,29 @@
         "sources": [
           "openai-deprecations",
           "openai-openapi"
+        ],
+        "nodeUsages": [
+          {
+            "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+            "label": "OpenAI node, \"Video\" resource",
+            "minTypeVersion": 2,
+            "parameter": "resource",
+            "value": "video",
+            "defaultOperation": "generate",
+            "operations": {
+              "generate": {
+                "name": "Generate",
+                "paths": [
+                  "/v1/videos"
+                ]
+              }
+            },
+            "note": "Type versions 2 to 2.3 run the node's V2 implementation, whose \"Video\" resource has one operation, Generate, which calls POST /videos and polls GET /videos/{id}. Version 1 has no Video resource.",
+            "verification": "verified",
+            "sources": [
+              "n8n-openai-node"
+            ]
+          }
         ],
         "verification": "verified"
       },

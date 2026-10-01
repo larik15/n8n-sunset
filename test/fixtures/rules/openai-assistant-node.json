@@ -1,0 +1,34 @@
+{
+  "id": "wf-openai-assistant-node",
+  "name": "Legacy assistant agent",
+  "nodes": [
+    {
+      "parameters": {
+        "assistantId": "asst_abc123",
+        "text": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Support assistant",
+      "type": "@n8n/n8n-nodes-langchain.openAiAssistant",
+      "typeVersion": 1.1,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "mode": "new",
+        "name": "Triage bot",
+        "instructions": "Sort incoming tickets",
+        "model": "gpt-4o-2024-08-06",
+        "text": "={{ $json.ticket }}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "New triage assistant",
+      "type": "@n8n/n8n-nodes-langchain.openAiAssistant",
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

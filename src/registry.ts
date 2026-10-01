@@ -58,14 +58,19 @@ export interface OpenAiModel {
 export interface OpenAiNodeUsage {
   nodeType: string;
   label: string;
-  /** Highest typeVersion that has this option; a missing typeVersion counts as 1. */
-  maxTypeVersion: number;
-  parameter: string;
-  value: string;
+  /** Type version range that has this option; a missing typeVersion counts as 1. */
+  minTypeVersion?: number;
+  maxTypeVersion?: number;
+  /** When set, only nodes with this parameter set to this value match. */
+  parameter?: string;
+  value?: string;
+  /** Parameter that selects the operation (default "operation"). */
+  operationParameter?: string;
   /** Operation used when the workflow JSON leaves it out (n8n omits defaults). */
   defaultOperation: string;
-  operations: Record<string, { name: string; path: string }>;
-  replacement: string;
+  operations: Record<string, { name: string; paths: string[] }>;
+  /** Falls back to the endpoint's replacement. */
+  replacement?: string;
   note?: string;
   verification: Verification;
   verificationNote?: string;

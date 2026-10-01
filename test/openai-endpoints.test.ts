@@ -122,6 +122,78 @@ describe('n8n OpenAI node, "Assistant" resource', () => {
   });
 });
 
+describe('n8n OpenAI node, "Video" resource', () => {
+  const result = scanFixture('rules/openai-node-video.json');
+
+  it('flags the default Generate operation as a Videos API call', () => {
+    const [finding] = endpointFindings(result, 'Generate teaser');
+    expect(finding).toMatchObject({
+      endpoint: '/v1/videos',
+      date: '2026-09-24',
+      withinWindow: true,
+      replacement: 'None listed by OpenAI',
+      verification: 'verified',
+      locations: ['OpenAI node, "Video" resource: resource'],
+    });
+    expect(finding!.message).toBe('OpenAI has shut down the Videos API (/v1/videos), which this node\'s "Generate" operation calls; calls fail.');
+    expect(finding!.daysUntil).toBeLessThan(0);
+  });
+
+  it('also reports the Sora model as a separate model finding', () => {
+    expect(byNode(result, 'Generate teaser').map((f) => f.ruleId).sort()).toEqual(['openai/endpoint-shutdown', 'openai/model-shutdown']);
+  });
+
+  it('flags an explicit Generate operation on version 2', () => {
+    expect(endpointFindings(result, 'Generate with explicit operation')).toMatchObject([{ endpoint: '/v1/videos' }]);
+  });
+
+  it('leaves other resources and version 1 alone', () => {
+    expect(endpointFindings(result, 'Generate image')).toEqual([]);
+    expect(endpointFindings(result, 'Version 1 node')).toEqual([]);
+  });
+});
+
+describe('OpenAI Assistant node', () => {
+  const result = scanFixture('rules/openai-assistant-node.json');
+
+  it('flags the default "Use Existing Assistant" operation as an Assistants API call', () => {
+    const [finding] = endpointFindings(result, 'Support assistant');
+    expect(finding).toMatchObject({
+      nodeType: '@n8n/n8n-nodes-langchain.openAiAssistant',
+      endpoint: '/v1/assistants, /v1/threads',
+      date: '2026-08-26',
+      withinWindow: true,
+      verification: 'verified',
+      locations: ['OpenAI Assistant node: mode'],
+    });
+    expect(finding!.message).toBe(
+      'OpenAI has shut down the Assistants API (/v1/assistants, /v1/threads), which this node\'s "Use Existing Assistant" operation calls; calls fail.',
+    );
+    expect(finding!.sources).toEqual(
+      expect.arrayContaining([
+        'https://github.com/n8n-io/n8n/blob/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts',
+        'https://github.com/langchain-ai/langchainjs/blob/6b914bceb4acd4664b12091770a2ddcbf5d8457e/libs/langchain-classic/src/experimental/openai_assistant/index.ts',
+      ]),
+    );
+  });
+
+  it('flags "Use New Assistant" on nodes without a typeVersion', () => {
+    expect(endpointFindings(result, 'New triage assistant')[0]!.message).toContain('"Use New Assistant" operation');
+  });
+
+  it('lists the already-broken finding first, then the n8n 3.0 removal, which points back to it', () => {
+    for (const node of ['Support assistant', 'New triage assistant']) {
+      const findings = byNode(result, node);
+      expect(findings.map((f) => [f.ruleId, f.date]), node).toEqual([
+        ['openai/endpoint-shutdown', '2026-08-26'],
+        ['n8n3/removed-node', '2026-10'],
+      ]);
+      expect(findings[1]!.message).toContain('It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26');
+      expect(findings[1]!.replacement).toBe(findings[0]!.replacement);
+    }
+  });
+});
+
 describe('Code nodes calling deprecated OpenAI endpoints', () => {
   const result = scanFixture('rules/openai-endpoints-code.json');
 

@@ -50,9 +50,13 @@ describe('n8n3/removed-node', () => {
     }
   });
 
-  it('adds the OpenAI Assistants API warning to the OpenAI Assistant node', () => {
+  it('says the OpenAI Assistant node already fails, and does not suggest the Assistant resource', () => {
     const [finding] = checkN8nNode({ name: 'Assistant', type: '@n8n/n8n-nodes-langchain.openAiAssistant', typeVersion: 1.1 }, registry);
-    expect(finding!.message).toContain('Assistants API itself as shut down on 2026-08-26');
+    expect(finding!.message).toBe(
+      'OpenAI Assistant node is removed in n8n 3.0. It already fails before then: it calls the Assistants API, which OpenAI shut down on 2026-08-26 (reported separately). ' +
+        'The n8n docs suggest the OpenAI node\'s "Assistant" resource instead, but that resource calls the same Assistants API, so the replacement here is the OpenAI node version 2.',
+    );
+    expect(finding!.replacement).toContain('OpenAI node version 2');
   });
 });
 
