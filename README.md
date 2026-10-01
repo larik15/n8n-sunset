@@ -1,5 +1,9 @@
 # n8n-sunset
 
+[![CI](https://github.com/larik15/n8n-sunset/actions/workflows/ci.yml/badge.svg)](https://github.com/larik15/n8n-sunset/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/n8n-sunset)](https://www.npmjs.com/package/n8n-sunset)
+[![License: MIT](https://img.shields.io/github/license/larik15/n8n-sunset)](LICENSE)
+
 Scan n8n workflows for what is about to break:
 
 - **OpenAI model shutdowns**: deprecated model IDs in OpenAI nodes, in HTTP Request nodes calling `api.openai.com`, and in Code node source.
