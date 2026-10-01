@@ -1,0 +1,15 @@
+{
+  "id": "wf-ai-transform",
+  "name": "AI Transform cleanup",
+  "nodes": [
+    {
+      "parameters": { "instructions": "Uppercase the name field", "jsCode": "return $input.all();" },
+      "id": "1",
+      "name": "Uppercase names",
+      "type": "n8n-nodes-base.aiTransform",
+      "typeVersion": 1,
+      "position": [0, 0]
+    }
+  ],
+  "connections": {}
+}

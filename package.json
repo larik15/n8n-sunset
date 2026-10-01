@@ -1,0 +1,51 @@
+{
+  "name": "n8n-sunset",
+  "version": "0.1.0",
+  "description": "Scan n8n workflow exports for nodes removed in n8n 3.0 and OpenAI models that are being shut down.",
+  "keywords": [
+    "n8n",
+    "n8n-3",
+    "openai",
+    "deprecation",
+    "migration",
+    "workflow",
+    "cli",
+    "ci"
+  ],
+  "license": "MIT",
+  "author": "larik15 (https://github.com/larik15)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/larik15/n8n-sunset.git"
+  },
+  "homepage": "https://github.com/larik15/n8n-sunset#readme",
+  "bugs": "https://github.com/larik15/n8n-sunset/issues",
+  "type": "module",
+  "bin": {
+    "n8n-sunset": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "data"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

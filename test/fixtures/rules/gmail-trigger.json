@@ -1,0 +1,23 @@
+{
+  "id": "wf-gmail",
+  "name": "Inbox triage",
+  "nodes": [
+    {
+      "parameters": { "pollTimes": { "item": [{ "mode": "everyMinute" }] }, "filters": {} },
+      "id": "1",
+      "name": "Old Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "pollTimes": { "item": [{ "mode": "everyMinute" }] }, "filters": {} },
+      "id": "2",
+      "name": "New Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

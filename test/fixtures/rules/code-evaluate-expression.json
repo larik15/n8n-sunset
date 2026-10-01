@@ -1,0 +1,31 @@
+{
+  "id": "wf-evaluate-expression",
+  "name": "Dynamic pricing",
+  "nodes": [
+    {
+      "parameters": { "jsCode": "const rate = $evaluateExpression('{{ $json.rate }}');\nreturn [{ json: { rate } }];" },
+      "id": "1",
+      "name": "Compute rate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "language": "python", "pythonCode": "# $evaluateExpression( is not available in Python\nreturn _input.all()" },
+      "id": "2",
+      "name": "Python step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "jsCode": "return $input.all();" },
+      "id": "3",
+      "name": "Plain code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

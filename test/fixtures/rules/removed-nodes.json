@@ -1,0 +1,64 @@
+{
+  "id": "wf-removed-nodes",
+  "name": "Legacy nightly import",
+  "nodes": [
+    {
+      "parameters": { "triggerTimes": { "item": [{ "hour": 2 }] } },
+      "id": "1",
+      "name": "Every night",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "filePath": "/data/import.csv" },
+      "id": "2",
+      "name": "Read import file",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "functionCode": "return items.map(i => ({ json: { ...i.json, imported: true } }));" },
+      "id": "3",
+      "name": "Mark imported",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "fieldToSplitOut": "rows" },
+      "id": "4",
+      "name": "Split rows",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3.1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "mode": "insert", "pineconeIndex": "docs" },
+      "id": "5",
+      "name": "Store vectors",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePineconeInsert",
+      "typeVersion": 1,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {},
+      "id": "6",
+      "name": "Orbit sync",
+      "type": "n8n-nodes-base.orbit",
+      "typeVersion": 1,
+      "disabled": true,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "assignments": { "assignments": [{ "id": "a", "name": "done", "value": true, "type": "boolean" }] } },
+      "id": "7",
+      "name": "Done flag",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {}
+}

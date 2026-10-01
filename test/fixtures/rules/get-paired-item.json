@@ -1,0 +1,37 @@
+{
+  "id": "wf-paired-item",
+  "name": "Order enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a", "name": "customer", "value": "={{ $getPairedItem('Fetch order', 0).json.customer }}", "type": "string" }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Attach customer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "assignments": { "assignments": [{ "id": "b", "name": "customer", "value": "={{ $('Fetch order').item.json.customer }}", "type": "string" }] } },
+      "id": "2",
+      "name": "Attach customer (fixed)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "content": "Remember: $getPairedItem goes away in 3.0" },
+      "id": "3",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

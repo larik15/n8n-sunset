@@ -1,0 +1,39 @@
+{
+  "id": "wf-execute-workflow",
+  "name": "Sub-workflow callers",
+  "nodes": [
+    {
+      "parameters": { "source": "localFile", "workflowPath": "/workflows/child.json" },
+      "id": "1",
+      "name": "Run local file",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "source": "url", "workflowUrl": "https://example.com/child.json" },
+      "id": "2",
+      "name": "Run from URL",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "workflowId": { "__rl": true, "value": "abc", "mode": "list" } },
+      "id": "3",
+      "name": "Run from database",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "source": "parameter", "workflowJson": "{}" },
+      "id": "4",
+      "name": "Run inline JSON",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [600, 0]
+    }
+  ],
+  "connections": {}
+}

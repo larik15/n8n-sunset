@@ -1,0 +1,18 @@
+[
+  {
+    "id": "arr-1",
+    "name": "First exported workflow",
+    "nodes": [
+      { "parameters": {}, "id": "1", "name": "Start", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 0] }
+    ],
+    "connections": {}
+  },
+  {
+    "id": "arr-2",
+    "name": "Second exported workflow",
+    "nodes": [
+      { "parameters": {}, "id": "1", "name": "Every 5 minutes", "type": "n8n-nodes-base.interval", "typeVersion": 1, "position": [0, 0] }
+    ],
+    "connections": {}
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "id": "wf-openai-http",
+  "name": "Raw OpenAI calls",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"gpt-3.5-turbo\",\n  \"messages\": [{ \"role\": \"user\", \"content\": \"Explain the o1 model\" }]\n}"
+      },
+      "id": "1",
+      "name": "Chat completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendBody": true,
+        "bodyParameters": { "parameters": [{ "name": "model", "value": "o3-mini" }, { "name": "input", "value": "hello" }] }
+      },
+      "id": "2",
+      "name": "Responses call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "url": "=https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview" },
+      "id": "3",
+      "name": "Realtime session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"gpt-4\" }"
+      },
+      "id": "4",
+      "name": "Other provider",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0]
+    }
+  ],
+  "connections": {}
+}

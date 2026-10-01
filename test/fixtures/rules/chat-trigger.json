@@ -1,0 +1,25 @@
+{
+  "id": "wf-chat",
+  "name": "Website chat",
+  "nodes": [
+    {
+      "parameters": { "public": true, "options": { "responseMode": "responseNodes" } },
+      "id": "1",
+      "name": "Chat with response nodes",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "webhookId": "aaa",
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "public": true, "options": { "responseMode": "lastNode" } },
+      "id": "2",
+      "name": "Chat with last node",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "webhookId": "bbb",
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

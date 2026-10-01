@@ -1,0 +1,38 @@
+{
+  "id": "wf-openai-other",
+  "name": "Model config in Set node",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a", "name": "model", "value": "gpt-4", "type": "string" },
+            { "id": "b", "name": "note", "value": "We used gpt-4 before", "type": "string" }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "content": "TODO: switch 'gpt-4' to gpt-5.6-sol" },
+      "id": "2",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "claude-sonnet-5-5", "mode": "list" } },
+      "id": "3",
+      "name": "Anthropic model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

@@ -1,0 +1,33 @@
+{
+  "id": "wf-openai-code",
+  "name": "Code-driven summaries",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://api.openai.com/v1/chat/completions',\n  body: { model: 'gpt-4-turbo', messages: $json.messages },\n});\n// o1 would be nicer here\nconst o1 = res.choices.length;\nreturn [{ json: { o1 } }];"
+      },
+      "id": "1",
+      "name": "Summarize in JS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "language": "pythonNative", "pythonCode": "model = \"text-davinci-003\"\nreturn [{\"json\": {\"model\": model}}]" },
+      "id": "2",
+      "name": "Summarize in Python",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "jsCode": "const body = \"{\\\"model\\\":\\\"gpt-4-0613\\\"}\";\nreturn [{ json: { body } }];" },
+      "id": "3",
+      "name": "Escaped JSON body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

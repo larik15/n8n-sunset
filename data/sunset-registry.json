@@ -1,0 +1,1585 @@
+{
+  "registryVersion": "2026-10-01",
+  "description": "Workflow-level breaking changes in n8n 3.0 and OpenAI model shutdowns. Every entry cites its source; entries marked \"unverified\" could not be fully confirmed from the official page.",
+  "sources": {
+    "n8n-v3-breaking-changes": {
+      "title": "n8n 3.0 breaking changes",
+      "url": "https://docs.n8n.io/changelog/v30-breaking-changes",
+      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/068947f7115ea1785b8539742683268137829bb9/docs/changelog/v30-breaking-changes.md",
+      "accessed": "2026-10-01"
+    },
+    "n8n-deprecated-nodes": {
+      "title": "n8n deprecated and versioned nodes",
+      "url": "https://docs.n8n.io/integrations/builtin/deprecated-nodes",
+      "repoUrl": "https://github.com/n8n-io/n8n-docs/blob/main/docs/integrations/builtin/deprecated-nodes.md",
+      "accessed": "2026-10-01"
+    },
+    "n8n-source": {
+      "title": "n8n source at n8n@2.41.5 (node type names, versions, parameter values)",
+      "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages",
+      "accessed": "2026-10-01"
+    },
+    "n8n-3x-branch": {
+      "title": "n8n 3.x branch (removed nodes are absent from its node manifests)",
+      "url": "https://github.com/n8n-io/n8n/tree/599ca716ee91b06d8f2026d432f8a09a9953f0a8",
+      "accessed": "2026-10-01"
+    },
+    "openai-deprecations": {
+      "title": "OpenAI API deprecations",
+      "url": "https://platform.openai.com/docs/deprecations",
+      "resolvedUrl": "https://developers.openai.com/api/docs/deprecations",
+      "accessed": "2026-10-01"
+    }
+  },
+  "n8n": {
+    "release": {
+      "version": "3.0",
+      "date": "2026-10",
+      "datePrecision": "month",
+      "verification": "verified",
+      "note": "The docs page says n8n 3.0 is \"scheduled for October 2026\"; no exact day is published (checked 2026-10-01, when the latest stable release was n8n@2.41.5). For date math the scanner uses the first day of the month.",
+      "sources": [
+        "n8n-v3-breaking-changes"
+      ]
+    },
+    "removedNodes": [
+      {
+        "type": "n8n-nodes-base.function",
+        "displayName": "Function",
+        "severity": "breaking",
+        "replacement": "Code node in \"Run Once for All Items\" mode",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.functionItem",
+        "displayName": "Function Item",
+        "severity": "breaking",
+        "replacement": "Code node in \"Run Once for Each Item\" mode",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.itemLists",
+        "displayName": "Item Lists",
+        "severity": "breaking",
+        "replacement": "Split Out, Aggregate, Sort, Limit, Remove Duplicates, or Summarize node (whichever matches the operation you use)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.code",
+        "displayName": "LangChain Code",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "The docs page lists this node as removed but names no replacement.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.cron",
+        "displayName": "Cron",
+        "severity": "breaking",
+        "replacement": "Schedule Trigger node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.interval",
+        "displayName": "Interval",
+        "severity": "breaking",
+        "replacement": "Schedule Trigger node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.htmlExtract",
+        "displayName": "HTML Extract",
+        "severity": "breaking",
+        "replacement": "HTML node, \"Extract HTML Content\" operation",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.iCal",
+        "displayName": "iCalendar",
+        "severity": "breaking",
+        "replacement": "Convert to File node, \"Convert to ICS\" operation",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.moveBinaryData",
+        "displayName": "Convert to/from binary data",
+        "severity": "breaking",
+        "replacement": "Convert to File or Extract from File node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.readBinaryFile",
+        "displayName": "Read Binary File",
+        "severity": "breaking",
+        "replacement": "Read/Write Files from Disk node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.readBinaryFiles",
+        "displayName": "Read Binary Files",
+        "severity": "breaking",
+        "replacement": "Read/Write Files from Disk node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.writeBinaryFile",
+        "displayName": "Write Binary File",
+        "severity": "breaking",
+        "replacement": "Read/Write Files from Disk node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.readPDF",
+        "displayName": "Read PDF",
+        "severity": "breaking",
+        "replacement": "Extract from File node, \"Extract From PDF\" operation",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.workflowTrigger",
+        "displayName": "Workflow Trigger",
+        "severity": "breaking",
+        "replacement": "n8n Trigger node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.orbit",
+        "displayName": "Orbit",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No replacement: the Orbit service shut down.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.openAi",
+        "displayName": "OpenAI (legacy)",
+        "severity": "breaking",
+        "replacement": "OpenAI node in the AI section (@n8n/n8n-nodes-langchain.openAi)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.openAiAssistant",
+        "displayName": "OpenAI Assistant",
+        "severity": "breaking",
+        "replacement": "OpenAI node (@n8n/n8n-nodes-langchain.openAi), \"Assistant\" resource",
+        "note": "The OpenAI deprecations page lists the Assistants API itself as shut down on 2026-08-26, so the suggested Assistant resource may not work either.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.lmOpenAi",
+        "displayName": "OpenAI Model",
+        "severity": "breaking",
+        "replacement": "OpenAI Chat Model node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "displayName": "HTTP Request Tool (legacy)",
+        "severity": "breaking",
+        "replacement": "HTTP Request node connected to the Tool input of the AI Agent node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+        "displayName": "SerpApi (Google Search)",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: call the SerpApi REST API with the HTTP Request node connected as a tool, or use a verified community node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.manualChatTrigger",
+        "displayName": "Manual Chat Trigger",
+        "severity": "breaking",
+        "replacement": "Chat Trigger node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.memoryChatRetriever",
+        "displayName": "Chat Messages Retriever",
+        "severity": "breaking",
+        "replacement": "Chat Memory Manager node, or load previous sessions in the Chat Trigger node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.memoryMotorhead",
+        "displayName": "Motorhead",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: use another supported memory node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.memoryZep",
+        "displayName": "Zep",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: use another supported memory node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.documentBinaryInputLoader",
+        "displayName": "Binary Input Loader",
+        "severity": "breaking",
+        "replacement": "Default Data Loader node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.documentJsonInputLoader",
+        "displayName": "JSON Input Loader",
+        "severity": "breaking",
+        "replacement": "Default Data Loader node",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.documentGithubLoader",
+        "displayName": "GitHub Document Loader",
+        "severity": "breaking",
+        "replacement": "Default Data Loader node (fetch GitHub content with the GitHub node first)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemoryInsert",
+        "displayName": "In Memory Vector Store Insert",
+        "severity": "breaking",
+        "replacement": "Simple Vector Store node (\"Insert Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemoryLoad",
+        "displayName": "In Memory Vector Store Load",
+        "severity": "breaking",
+        "replacement": "Simple Vector Store node (\"Get Many\" or \"Retrieve Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStorePineconeInsert",
+        "displayName": "Pinecone: Insert",
+        "severity": "breaking",
+        "replacement": "Pinecone Vector Store node (\"Insert Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStorePineconeLoad",
+        "displayName": "Pinecone: Load",
+        "severity": "breaking",
+        "replacement": "Pinecone Vector Store node (\"Get Many\" or \"Retrieve Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabaseInsert",
+        "displayName": "Supabase: Insert",
+        "severity": "breaking",
+        "replacement": "Supabase Vector Store node (\"Insert Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabaseLoad",
+        "displayName": "Supabase: Load",
+        "severity": "breaking",
+        "replacement": "Supabase Vector Store node (\"Get Many\" or \"Retrieve Documents\" operation)",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreZep",
+        "displayName": "Zep Vector Store",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: use another supported vector store node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreZepInsert",
+        "displayName": "Zep Vector Store: Insert",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: use another supported vector store node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreZepLoad",
+        "displayName": "Zep Vector Store: Load",
+        "severity": "breaking",
+        "replacement": null,
+        "note": "No direct replacement: use another supported vector store node.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      },
+      {
+        "type": "n8n-nodes-base.aiTransform",
+        "displayName": "AI Transform",
+        "severity": "info",
+        "replacement": "Code node (n8n migrates existing AI Transform nodes automatically on upgrade, keeping the generated JavaScript)",
+        "note": "Existing workflows keep working; you can no longer add new AI Transform nodes.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source",
+          "n8n-3x-branch"
+        ]
+      }
+    ],
+    "changes": [
+      {
+        "id": "ai-agent-v1",
+        "title": "AI Agent node version 1 removed",
+        "nodeTypes": [
+          "@n8n/n8n-nodes-langchain.agent"
+        ],
+        "severity": "breaking",
+        "message": "AI Agent node version 1.x is removed in n8n 3.0, along with its agent modes (SQL, Conversational, OpenAI Functions, Plan and Execute, ReAct).",
+        "replacement": "Update the node to the latest AI Agent version (Tools Agent behaves the same). For SQL Agent, use a Postgres or MySQL tool sub-node with a recent AI Agent.",
+        "note": "The docs say \"version 1\"; n8n source maps typeVersions 1 to 1.9 to the V1 implementation, so all 1.x versions are flagged.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "execute-workflow-source",
+        "title": "Execute Sub-workflow: Local File and URL sources removed",
+        "nodeTypes": [
+          "n8n-nodes-base.executeWorkflow"
+        ],
+        "severity": "breaking",
+        "message": "The \"Local File\" and \"URL\" sources of the Execute Sub-workflow node are removed in n8n 3.0; nodes using them fail with an error.",
+        "replacement": "Import the sub-workflow and select it with the \"Database\" source, or paste its JSON with \"Define Below\" (\"Parameter\" on node versions 1.1 and older).",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "get-paired-item",
+        "title": "$getPairedItem helper removed",
+        "nodeTypes": [
+          "*"
+        ],
+        "severity": "breaking",
+        "message": "The $getPairedItem expression helper is removed in n8n 3.0.",
+        "replacement": "Use item linking instead: the pairedItem property or $(\"<node-name>\").item.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes"
+        ]
+      },
+      {
+        "id": "code-evaluate-expression",
+        "title": "$evaluateExpression() removed from the Code node",
+        "nodeTypes": [
+          "n8n-nodes-base.code"
+        ],
+        "severity": "breaking",
+        "message": "$evaluateExpression() is removed from the Code node (JavaScript) in n8n 3.0. Secure-mode task runners, the default since n8n 2.0, already fail on this call.",
+        "replacement": "Evaluate the expression in a node field (for example an Edit Fields (Set) node before the Code node) and read the result from the input item.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes"
+        ]
+      },
+      {
+        "id": "gmail-trigger-pre-1-4",
+        "title": "Gmail Trigger versions 1 to 1.3 run as version 1.4",
+        "nodeTypes": [
+          "n8n-nodes-base.gmailTrigger"
+        ],
+        "severity": "behavior-change",
+        "message": "Gmail Trigger versions below 1.4 run with version 1.4 behavior in n8n 3.0: Max Emails per Poll applies (default 10), drafts are skipped unless \"Include Drafts\" is on, and sent or scheduled emails outside the inbox no longer trigger.",
+        "replacement": "Turn on \"Include Drafts\" if the workflow relies on drafts; for sent or scheduled emails, use a Schedule Trigger followed by the Gmail node's \"Get Many\" messages operation.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "always-output-data-multi-output",
+        "title": "Always Output Data on nodes with several outputs",
+        "nodeTypes": [
+          "n8n-nodes-base.if",
+          "n8n-nodes-base.switch"
+        ],
+        "unverifiedNodeTypes": [
+          "n8n-nodes-base.compareDatasets",
+          "n8n-nodes-base.splitInBatches"
+        ],
+        "unverifiedNote": "The docs page names If and Switch as examples of \"nodes with several outputs\". Compare Datasets (4 outputs) and Loop Over Items v3 (2 outputs) have several outputs in n8n source but are not named on the page.",
+        "severity": "behavior-change",
+        "message": "With \"Always Output Data\" on, n8n 3.0 adds an empty item only when every output is empty; before, each empty output got one, so other branches ran.",
+        "replacement": "Review the node and adjust \"Always Output Data\" to match your intent.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "webflow-v1-oauth2",
+        "title": "Webflow OAuth2 credential: Legacy toggle off by default",
+        "nodeTypes": [
+          "n8n-nodes-base.webflow"
+        ],
+        "severity": "behavior-change",
+        "message": "The Webflow OAuth2 credential's \"Legacy\" toggle defaults to off in n8n 3.0. Credentials that never saved it request v2 scopes on reconnect, which a legacy Webflow v1 app rejects.",
+        "replacement": "Turn on \"Legacy\" on the Webflow OAuth2 credential before reconnecting it, or move the node to version 2.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "chat-trigger-json-frames",
+        "title": "Chat Trigger: WebSocket messages are JSON frames",
+        "nodeTypes": [
+          "@n8n/n8n-nodes-langchain.chatTrigger"
+        ],
+        "severity": "behavior-change",
+        "message": "In \"Using Response Nodes\" mode, the chat WebSocket now sends every frame as JSON with a \"type\" field; custom clients expecting raw strings break.",
+        "replacement": "Parse every frame as JSON and switch on \"type\", or update an embedded @n8n/chat widget to 1.31.0 or later.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      },
+      {
+        "id": "compression-limits",
+        "title": "Lower Compression node decompression limits",
+        "nodeTypes": [
+          "n8n-nodes-base.compression"
+        ],
+        "severity": "behavior-change",
+        "message": "Default decompression limits drop to 256 MiB (from 2 GiB) and 1,000 ZIP entries (from 5,000) in n8n 3.0; larger archives fail.",
+        "replacement": "Set N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES=2147483648 and N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES=5000 if you decompress larger archives.",
+        "verification": "verified",
+        "sources": [
+          "n8n-v3-breaking-changes",
+          "n8n-source"
+        ]
+      }
+    ]
+  },
+  "openai": {
+    "source": "openai-deprecations",
+    "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix; those matches are reported as unverified.",
+    "excluded": "Rows that are not model IDs are left out: endpoints (/v1/...), API products (Assistants API, Videos API, Evals, Agent Builder, reusable prompts), OpenAI-Beta headers, and fine-tuning training restrictions.",
+    "models": [
+      {
+        "id": "gpt-5.4-cyber",
+        "shutdownDate": "2026-10-01",
+        "replacement": "The most capable cyber model available to you.",
+        "announcement": "2026-09-11: GPT-5.4-Cyber",
+        "verification": "verified"
+      },
+      {
+        "id": "whisper-1",
+        "shutdownDate": "2027-02-26",
+        "replacement": "gpt-live-transcribe or gpt-transcribe",
+        "announcement": "2026-08-26: Transcription models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-transcribe",
+        "shutdownDate": "2027-02-26",
+        "replacement": "gpt-live-transcribe or gpt-transcribe",
+        "announcement": "2026-08-26: Transcription models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-transcribe",
+        "shutdownDate": "2027-02-26",
+        "replacement": "gpt-live-transcribe or gpt-transcribe",
+        "announcement": "2026-08-26: Transcription models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-transcribe-diarize",
+        "shutdownDate": "2027-02-26",
+        "replacement": "gpt-live-transcribe or gpt-transcribe",
+        "announcement": "2026-08-26: Transcription models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-realtime",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-realtime-2.1",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-audio",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-4o-audio",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-4o-realtime",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-realtime-2.1",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-realtime-mini",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-audio-mini",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-4o-mini-realtime",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-4o-mini-audio",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-4o-mini-transcribe-2025-03-20",
+        "shutdownDate": "2027-01-20",
+        "replacement": "gpt-4o-mini-transcribe-2025-12-15",
+        "announcement": "2026-07-20: Legacy audio, realtime, and transcription models",
+        "verification": "verified",
+        "matchDatedSnapshots": true
+      },
+      {
+        "id": "gpt-5-2025-08-07",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5-mini-2025-08-07",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5-nano-2025-08-07",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-luna",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5-pro-2025-10-06",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-sol (reasoning.mode: pro)",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "o3-2025-04-16",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "o3-pro-2025-06-10",
+        "shutdownDate": "2026-12-11",
+        "replacement": "gpt-5.6-sol (reasoning.mode: pro)",
+        "announcement": "2026-06-11: GPT-5 and o3 model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-image-1-mini",
+        "shutdownDate": "2026-12-01",
+        "replacement": "gpt-image-2.5-sunburst or gpt-image-2.5-flare",
+        "announcement": "2026-06-02: GPT Image model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-image-1.5",
+        "shutdownDate": "2026-12-01",
+        "replacement": "gpt-image-2.5-sunburst or gpt-image-2.5-flare",
+        "announcement": "2026-06-02: GPT Image model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "chatgpt-image-latest",
+        "shutdownDate": "2026-12-01",
+        "replacement": "gpt-image-2.5-sunburst or gpt-image-2.5-flare",
+        "announcement": "2026-06-02: GPT Image model deprecations",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.2-chat-latest",
+        "shutdownDate": "2026-08-10",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-05-08: gpt-5.2-chat-latest and gpt-5.3-chat-latest model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.3-chat-latest",
+        "shutdownDate": "2026-08-10",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-05-08: gpt-5.2-chat-latest and gpt-5.3-chat-latest model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-0125",
+        "aliases": [
+          "gpt-3.5-turbo",
+          "gpt-3.5-turbo-completions"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-0613",
+        "aliases": [
+          "gpt-4",
+          "gpt-4-0613-completions",
+          "gpt-4-completions"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-1106-preview",
+        "shutdownDate": "2026-03-26",
+        "replacement": "gpt-5 or gpt-4.1*",
+        "announcement": "2025-09-26: Legacy GPT model snapshots (March 2026 shutdown)",
+        "verification": "unverified",
+        "verificationNote": "The official page lists conflicting shutdown dates for this model (2026-03-26, 2026-10-23) under different announcements; the earliest is used."
+      },
+      {
+        "id": "gpt-4-turbo",
+        "aliases": [
+          "gpt-4-turbo-2024-04-09",
+          "gpt-4-turbo-completions"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4.1-nano",
+        "aliases": [
+          "gpt-4.1-nano-2025-04-14"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-luna",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-2024-05-13",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-image-1",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-image-2.5-sunburst or gpt-image-2.5-flare",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "o1-2024-12-17",
+        "aliases": [
+          "o1"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "o1-pro-2025-03-19",
+        "aliases": [
+          "o1-pro"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol (reasoning.mode: pro)",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "o3-mini-2025-01-31",
+        "aliases": [
+          "o3-mini"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "ft-o4-mini-2025-04-16",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "o4-mini-2025-04-16"
+      },
+      {
+        "id": "o4-mini-2025-04-16",
+        "aliases": [
+          "o4-mini"
+        ],
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "ft-gpt-3.5-turbo",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "gpt-3.5-turbo"
+      },
+      {
+        "id": "ft-gpt-4",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "gpt-4"
+      },
+      {
+        "id": "ft-gpt-4.1-nano-2025-04-14",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-luna",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "gpt-4.1-nano-2025-04-14"
+      },
+      {
+        "id": "ft-babbage-002",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "babbage-002"
+      },
+      {
+        "id": "ft-davinci-002",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
+        "verification": "verified",
+        "fineTuneOf": "davinci-002"
+      },
+      {
+        "id": "computer-use-preview-2025-03-11",
+        "aliases": [
+          "computer-use-preview"
+        ],
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-search-preview-2025-03-11",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-search-preview-2025-03-11",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5-chat-latest",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5-codex",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.1-chat-latest",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.1-codex",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.1-codex-max",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.1-codex-mini",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-audio-mini-2025-10-06",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-realtime-mini-2025-10-06",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "o3-deep-research-2025-06-26",
+        "aliases": [
+          "o3-deep-research"
+        ],
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "o4-mini-deep-research-2025-06-26",
+        "aliases": [
+          "o4-mini-deep-research"
+        ],
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.2-codex",
+        "shutdownDate": "2026-07-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots (July 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "sora-2",
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "verification": "verified"
+      },
+      {
+        "id": "sora-2-pro",
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "verification": "verified"
+      },
+      {
+        "id": "sora-2-2025-10-06",
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "verification": "verified"
+      },
+      {
+        "id": "sora-2-2025-12-08",
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "verification": "verified"
+      },
+      {
+        "id": "sora-2-pro-2025-10-06",
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "verification": "verified"
+      },
+      {
+        "id": "chatgpt-4o-latest",
+        "shutdownDate": "2026-02-17",
+        "replacement": "gpt-5.1-chat-latest",
+        "announcement": "2025-11-18: chatgpt-4o-latest snapshot",
+        "verification": "verified"
+      },
+      {
+        "id": "codex-mini-latest",
+        "shutdownDate": "2026-02-12",
+        "replacement": "gpt-5-codex-mini",
+        "announcement": "2025-11-17: codex-mini-latest model snapshot",
+        "verification": "verified"
+      },
+      {
+        "id": "dall-e-2",
+        "shutdownDate": "2026-05-12",
+        "replacement": "gpt-image-2, gpt-image-1, or gpt-image-1-mini",
+        "announcement": "2025-11-14: DALL·E model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "dall-e-3",
+        "shutdownDate": "2026-05-12",
+        "replacement": "gpt-image-2, gpt-image-1, or gpt-image-1-mini",
+        "announcement": "2025-11-14: DALL·E model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-instruct",
+        "shutdownDate": "2026-09-28",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2025-09-26: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "babbage-002",
+        "shutdownDate": "2026-09-28",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2025-09-26: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "davinci-002",
+        "shutdownDate": "2026-09-28",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2025-09-26: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-1106",
+        "shutdownDate": "2026-09-28",
+        "replacement": "gpt-5.6-terra",
+        "announcement": "2025-09-26: Legacy GPT model snapshots",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-0314",
+        "shutdownDate": "2026-03-26",
+        "replacement": "gpt-5 or gpt-4.1*",
+        "announcement": "2025-09-26: Legacy GPT model snapshots (March 2026 shutdown)",
+        "verification": "verified",
+        "note": "Also listed as \"at earliest 2024-06-13\" under an older announcement; the firm date 2026-03-26 is used."
+      },
+      {
+        "id": "gpt-4-0125-preview",
+        "aliases": [
+          "gpt-4-turbo-preview",
+          "gpt-4-turbo-preview-completions"
+        ],
+        "shutdownDate": "2026-03-26",
+        "replacement": "gpt-5 or gpt-4.1*",
+        "announcement": "2025-09-26: Legacy GPT model snapshots (March 2026 shutdown)",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-realtime-preview",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-realtime-1.5",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-realtime-preview-2025-06-03",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-realtime-1.5",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-realtime-preview-2024-12-17",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-realtime-1.5",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-realtime-preview",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-realtime-mini",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-audio-preview",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-audio-preview",
+        "shutdownDate": "2026-05-07",
+        "replacement": "gpt-audio-mini",
+        "announcement": "2025-09-15: gpt-4o-realtime-preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-realtime-preview-2024-10-01",
+        "shutdownDate": "2025-10-10",
+        "replacement": "gpt-realtime-1.5",
+        "announcement": "2025-06-10: gpt-4o-realtime-preview-2024-10-01",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-audio-preview-2024-10-01",
+        "shutdownDate": "2025-10-10",
+        "replacement": "gpt-audio-1.5",
+        "announcement": "2025-06-10: gpt-4o-audio-preview-2024-10-01",
+        "verification": "verified"
+      },
+      {
+        "id": "text-moderation-007",
+        "shutdownDate": "2025-10-27",
+        "replacement": "omni-moderation",
+        "announcement": "2025-04-28: text-moderation",
+        "verification": "verified"
+      },
+      {
+        "id": "text-moderation-stable",
+        "shutdownDate": "2025-10-27",
+        "replacement": "omni-moderation",
+        "announcement": "2025-04-28: text-moderation",
+        "verification": "verified"
+      },
+      {
+        "id": "text-moderation-latest",
+        "shutdownDate": "2025-10-27",
+        "replacement": "omni-moderation",
+        "announcement": "2025-04-28: text-moderation",
+        "verification": "verified"
+      },
+      {
+        "id": "o1-preview",
+        "shutdownDate": "2025-07-28",
+        "replacement": "o3",
+        "announcement": "2025-04-28: o1-preview and o1-mini",
+        "verification": "verified"
+      },
+      {
+        "id": "o1-mini",
+        "shutdownDate": "2025-10-27",
+        "replacement": "o4-mini",
+        "announcement": "2025-04-28: o1-preview and o1-mini",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4.5-preview",
+        "shutdownDate": "2025-07-14",
+        "replacement": "gpt-4.1",
+        "announcement": "2025-04-14: GPT-4.5-preview",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-32k",
+        "shutdownDate": "2025-06-06",
+        "replacement": "gpt-4o",
+        "announcement": "2024-06-06: GPT-4-32K and Vision Preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-32k-0613",
+        "shutdownDate": "2025-06-06",
+        "replacement": "gpt-4o",
+        "announcement": "2024-06-06: GPT-4-32K and Vision Preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-32k-0314",
+        "shutdownDate": "2025-06-06",
+        "replacement": "gpt-4o",
+        "announcement": "2024-06-06: GPT-4-32K and Vision Preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-vision-preview",
+        "shutdownDate": "2024-12-06",
+        "replacement": "gpt-4o",
+        "announcement": "2024-06-06: GPT-4-32K and Vision Preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4-1106-vision-preview",
+        "shutdownDate": "2024-12-06",
+        "replacement": "gpt-4o",
+        "announcement": "2024-06-06: GPT-4-32K and Vision Preview models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-0613",
+        "shutdownDate": "2024-09-13",
+        "replacement": "gpt-3.5-turbo",
+        "announcement": "2023-11-06: Chat model updates",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-16k-0613",
+        "shutdownDate": "2024-09-13",
+        "replacement": "gpt-3.5-turbo",
+        "announcement": "2023-11-06: Chat model updates",
+        "verification": "verified"
+      },
+      {
+        "id": "text-ada-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-babbage-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-curie-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-davinci-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-davinci-002",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-davinci-003",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-3.5-turbo-instruct",
+        "announcement": "2023-07-06: GPT and embeddings / InstructGPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "ada",
+        "shutdownDate": "2024-01-04",
+        "replacement": "babbage-002",
+        "announcement": "2023-07-06: GPT and embeddings / Base GPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "babbage",
+        "shutdownDate": "2024-01-04",
+        "replacement": "babbage-002",
+        "announcement": "2023-07-06: GPT and embeddings / Base GPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "curie",
+        "shutdownDate": "2024-01-04",
+        "replacement": "davinci-002",
+        "announcement": "2023-07-06: GPT and embeddings / Base GPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "davinci",
+        "shutdownDate": "2024-01-04",
+        "replacement": "davinci-002",
+        "announcement": "2023-07-06: GPT and embeddings / Base GPT models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-davinci-002",
+        "shutdownDate": "2023-03-23",
+        "replacement": "gpt-4o",
+        "announcement": "2023-03-20: Codex models",
+        "verification": "unverified",
+        "verificationNote": "The official page lists conflicting shutdown dates for this model (2023-03-23, 2024-01-04) under different announcements; the earliest is used."
+      },
+      {
+        "id": "text-davinci-edit-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-4o",
+        "announcement": "2023-07-06: GPT and embeddings / Edit models & endpoint",
+        "verification": "verified"
+      },
+      {
+        "id": "code-davinci-edit-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "gpt-4o",
+        "announcement": "2023-07-06: GPT and embeddings / Edit models & endpoint",
+        "verification": "verified"
+      },
+      {
+        "id": "text-similarity-ada-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-ada-doc-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-ada-query-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-search-ada-code-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-search-ada-text-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-similarity-babbage-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-babbage-doc-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-babbage-query-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-search-babbage-code-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-search-babbage-text-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-similarity-curie-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-curie-doc-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-curie-query-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-similarity-davinci-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-davinci-doc-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "text-search-davinci-query-001",
+        "shutdownDate": "2024-01-04",
+        "replacement": "text-embedding-3-small",
+        "announcement": "2023-07-06: GPT and embeddings / First-generation text embedding models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-3.5-turbo-0301",
+        "shutdownDate": "2024-09-13",
+        "replacement": "gpt-3.5-turbo",
+        "announcement": "2023-06-13: Updated chat models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-davinci-001",
+        "shutdownDate": "2023-03-23",
+        "replacement": "gpt-4o",
+        "announcement": "2023-03-20: Codex models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-cushman-002",
+        "shutdownDate": "2023-03-23",
+        "replacement": "gpt-4o",
+        "announcement": "2023-03-20: Codex models",
+        "verification": "verified"
+      },
+      {
+        "id": "code-cushman-001",
+        "shutdownDate": "2023-03-23",
+        "replacement": "gpt-4o",
+        "announcement": "2023-03-20: Codex models",
+        "verification": "verified"
+      }
+    ]
+  }
+}

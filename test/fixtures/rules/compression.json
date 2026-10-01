@@ -1,0 +1,23 @@
+{
+  "id": "wf-compression",
+  "name": "Archive processing",
+  "nodes": [
+    {
+      "parameters": { "binaryPropertyName": "data" },
+      "id": "1",
+      "name": "Unzip upload",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "operation": "compress", "outputFormat": "zip" },
+      "id": "2",
+      "name": "Zip results",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

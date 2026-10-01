@@ -1,0 +1,61 @@
+{
+  "id": "wf-openai-matching",
+  "name": "Model matching edge cases",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/realtime/sessions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"gpt-realtime-2025-08-28\" }"
+      },
+      "id": "1",
+      "name": "Realtime snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-realtime-2.1", "mode": "id" } },
+      "id": "2",
+      "name": "Realtime replacement",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "ft:gpt-3.5-turbo-0125:acme::9xYz", "mode": "id" } },
+      "id": "3",
+      "name": "Fine-tuned 3.5",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "ft:gpt-4o-2024-05-13:acme:support:abc", "mode": "id" } },
+      "id": "4",
+      "name": "Fine-tuned 4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "ft:gpt-4o-mini-2024-07-18:acme::x1", "mode": "id" } },
+      "id": "5",
+      "name": "Fine-tuned 4o mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4-1106-preview", "mode": "list" } },
+      "id": "6",
+      "name": "Conflicting dates",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [1000, 0]
+    }
+  ],
+  "connections": {}
+}

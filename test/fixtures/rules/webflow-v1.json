@@ -1,0 +1,34 @@
+{
+  "id": "wf-webflow",
+  "name": "Webflow CMS sync",
+  "nodes": [
+    {
+      "parameters": { "authentication": "oAuth2", "operation": "getAll", "collectionId": "c1" },
+      "id": "1",
+      "name": "Webflow v1 OAuth",
+      "type": "n8n-nodes-base.webflow",
+      "typeVersion": 1,
+      "credentials": { "webflowOAuth2Api": { "id": "7", "name": "Webflow account" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "operation": "getAll", "collectionId": "c1" },
+      "id": "2",
+      "name": "Webflow v1 token",
+      "type": "n8n-nodes-base.webflow",
+      "typeVersion": 1,
+      "credentials": { "webflowApi": { "id": "8", "name": "Webflow token" } },
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "authentication": "oAuth2", "operation": "getAll" },
+      "id": "3",
+      "name": "Webflow v2 OAuth",
+      "type": "n8n-nodes-base.webflow",
+      "typeVersion": 2,
+      "credentials": { "webflowOAuth2Api": { "id": "7", "name": "Webflow account" } },
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

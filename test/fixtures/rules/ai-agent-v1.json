@@ -1,0 +1,30 @@
+{
+  "id": "wf-ai-agent",
+  "name": "Support agents",
+  "nodes": [
+    {
+      "parameters": { "agent": "sqlAgent", "dataSource": "postgres" },
+      "id": "1",
+      "name": "SQL agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "agent": "conversationalAgent" },
+      "id": "2",
+      "name": "Old agent without version",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "3",
+      "name": "Current agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [400, 0]
+    }
+  ],
+  "connections": {}
+}

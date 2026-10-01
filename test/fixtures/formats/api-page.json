@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "id": "api-1",
+      "name": "From the n8n API",
+      "active": true,
+      "nodes": [
+        { "parameters": {}, "id": "1", "name": "Old trigger", "type": "n8n-nodes-base.workflowTrigger", "typeVersion": 1, "position": [0, 0] }
+      ],
+      "connections": {}
+    }
+  ],
+  "nextCursor": null
+}

@@ -1,0 +1,51 @@
+{
+  "id": "wf-openai-llm",
+  "name": "Lead scoring",
+  "nodes": [
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4", "mode": "list", "cachedResultName": "gpt-4" }, "options": {} },
+      "id": "1",
+      "name": "GPT-4 chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "={{ $json.premium ? 'gpt-4-turbo' : 'gpt-4o-mini' }}", "mode": "id" }, "options": {} },
+      "id": "2",
+      "name": "Tiered chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "o1-mini", "mode": "list" },
+        "messages": { "values": [{ "content": "Compare the 'davinci' and 'curie' painting styles" }] }
+      },
+      "id": "3",
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "gpt-4o-mini", "mode": "list" }, "options": {} },
+      "id": "4",
+      "name": "Current chat model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "model": "gpt-4", "options": {} },
+      "id": "5",
+      "name": "Azure deployment",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [800, 0]
+    }
+  ],
+  "connections": {}
+}
