@@ -3,6 +3,7 @@ import type { Finding } from './findings.js';
 import type { Registry, Severity } from './registry.js';
 import { checkN8nNode } from './rules/n8n.js';
 import { buildModelIndex, checkOpenAiModels } from './rules/openai.js';
+import { checkOpenAiEndpoints } from './rules/openai-endpoints.js';
 import type { Workflow } from './workflows.js';
 
 export interface ScanOptions {
@@ -36,7 +37,11 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
 
   for (const workflow of workflows) {
     for (const node of workflow.nodes) {
-      const ruleFindings = [...checkN8nNode(node, registry), ...checkOpenAiModels(node, registry, index, options.asOf)];
+      const ruleFindings = [
+        ...checkN8nNode(node, registry),
+        ...checkOpenAiModels(node, registry, index, options.asOf),
+        ...checkOpenAiEndpoints(node, registry, options.asOf),
+      ];
       for (const f of ruleFindings) {
         const daysUntil = daysBetween(options.asOf, effectiveDay(f.date, f.datePrecision));
         findings.push({

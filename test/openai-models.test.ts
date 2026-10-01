@@ -98,6 +98,10 @@ describe('HTTP Request nodes calling api.openai.com', () => {
   it('ignores requests to other hosts', () => {
     expect(byNode(result, 'Other provider')).toEqual([]);
   });
+
+  it('treats a request with OpenAI credentials as an OpenAI call, even when an expression sets the URL', () => {
+    expect(byNode(result, 'Via OpenAI credential')).toMatchObject([{ model: 'gpt-4', locations: ['HTTP Request to api.openai.com: jsonBody'] }]);
+  });
 });
 
 describe('Code nodes', () => {

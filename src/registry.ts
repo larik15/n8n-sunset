@@ -54,6 +54,26 @@ export interface OpenAiModel {
   fineTuneOf?: string;
 }
 
+export interface OpenAiEndpoint {
+  id: string;
+  /** How the message names it, e.g. "the Assistants API". */
+  label: string;
+  /** URL paths, e.g. "/v1/assistants". Paths below them match too, unless exactPath is set. */
+  paths?: string[];
+  exactPath?: boolean;
+  /** Only requests with this HTTP method are affected. */
+  method?: string;
+  /** A request header that selects the deprecated API, e.g. OpenAI-Beta: realtime=v1. */
+  header?: { name: string; value: string };
+  shutdownDate: string;
+  replacement: string | null;
+  announcement: string;
+  note?: string;
+  verification: Verification;
+  verificationNote?: string;
+  sources: string[];
+}
+
 export interface Registry {
   registryVersion: string;
   description: string;
@@ -73,8 +93,10 @@ export interface Registry {
   openai: {
     source: string;
     matching: string;
+    endpointMatching: string;
     excluded: string;
     models: OpenAiModel[];
+    endpoints: OpenAiEndpoint[];
   };
 }
 

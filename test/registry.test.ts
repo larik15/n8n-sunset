@@ -22,6 +22,7 @@ describe('sunset registry', () => {
       ...registry.n8n.removedNodes.flatMap((n) => n.sources),
       ...registry.n8n.changes.flatMap((c) => c.sources),
       registry.openai.source,
+      ...registry.openai.endpoints.flatMap((e) => e.sources),
     ];
     for (const ref of refs) expect(registry.sources, ref).toHaveProperty([ref]);
   });
@@ -58,6 +59,22 @@ describe('sunset registry', () => {
       expect(VERIFICATION).toContain(model.verification);
       if (model.verification === 'unverified') expect(model.verificationNote, model.id).toBeTruthy();
     }
+  });
+
+  it('lists OpenAI endpoints with a path or header, a valid date, and the deprecations page as a source', () => {
+    const ids = registry.openai.endpoints.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const endpoint of registry.openai.endpoints) {
+      expect(Boolean(endpoint.paths?.length) !== Boolean(endpoint.header), endpoint.id).toBe(true);
+      for (const path of endpoint.paths ?? []) expect(path, endpoint.id).toMatch(/^\/v1\/[a-z_-]+(\/[a-z_-]+)*$/);
+      expect(isIsoDay(endpoint.shutdownDate), endpoint.id).toBe(true);
+      expect(VERIFICATION).toContain(endpoint.verification);
+      expect(endpoint.sources[0], endpoint.id).toBe('openai-deprecations');
+    }
+    expect(registry.openai.endpoints.find((e) => e.id === 'assistants-api')).toMatchObject({
+      paths: ['/v1/assistants', '/v1/threads'],
+      shutdownDate: '2026-08-26',
+    });
   });
 
   it('keeps aliases with their snapshot, as the official page lists them', () => {

@@ -1,6 +1,6 @@
 import type { DatePrecision, Severity, Verification } from './registry.js';
 
-export type Category = 'n8n-3.0' | 'openai-model';
+export type Category = 'n8n-3.0' | 'openai-model' | 'openai-endpoint';
 
 /** What a rule reports about one node, before workflow context and dates are attached. */
 export interface RuleFinding {
@@ -17,6 +17,8 @@ export interface RuleFinding {
   sources: string[];
   /** For model findings: the model ID found in the workflow. */
   model?: string;
+  /** For endpoint findings: the path or header found, e.g. "/v1/threads" or "OpenAI-Beta: realtime=v1". */
+  endpoint?: string;
   /** Where in the node the problem was found, e.g. "HTTP Request to api.openai.com: jsonBody". */
   locations?: string[];
 }

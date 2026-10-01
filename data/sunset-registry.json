@@ -29,6 +29,16 @@
       "url": "https://platform.openai.com/docs/deprecations",
       "resolvedUrl": "https://developers.openai.com/api/docs/deprecations",
       "accessed": "2026-10-01"
+    },
+    "openai-openapi": {
+      "title": "OpenAI OpenAPI spec (endpoint paths; /assistants and /threads are tagged \"Assistants\")",
+      "url": "https://github.com/openai/openai-openapi/blob/c300cf282956e5f29c23f00def1d68ab44f8d7ab/openapi.yaml",
+      "accessed": "2026-10-01"
+    },
+    "openai-assistants-migration": {
+      "title": "OpenAI Assistants API migration guide (threads, messages and runs are part of the Assistants API)",
+      "url": "https://developers.openai.com/api/docs/assistants/migration",
+      "accessed": "2026-10-01"
     }
   },
   "n8n": {
@@ -644,7 +654,8 @@
   "openai": {
     "source": "openai-deprecations",
     "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix; those matches are reported as unverified.",
-    "excluded": "Rows that are not model IDs are left out: endpoints (/v1/...), API products (Assistants API, Videos API, Evals, Agent Builder, reusable prompts), OpenAI-Beta headers, and fine-tuning training restrictions.",
+    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method.",
+    "excluded": "Left out because they are not endpoints a workflow calls: Agent Builder (a dashboard product), the 2024 restriction on new fine-tuning training for babbage-002 and davinci-002, and the 2026-05-07 and 2026-07-02 fine-tuning restrictions that only apply to some organizations (noted on the fine-tuning job creation entry).",
     "models": [
       {
         "id": "gpt-5.4-cyber",
@@ -1578,6 +1589,203 @@
         "shutdownDate": "2023-03-23",
         "replacement": "gpt-4o",
         "announcement": "2023-03-20: Codex models",
+        "verification": "verified"
+      }
+    ],
+    "endpoints": [
+      {
+        "id": "assistants-api",
+        "label": "the Assistants API",
+        "paths": [
+          "/v1/assistants",
+          "/v1/threads"
+        ],
+        "shutdownDate": "2026-08-26",
+        "replacement": "Responses API and Conversations API",
+        "announcement": "2025-08-20: Assistants API",
+        "sources": [
+          "openai-deprecations",
+          "openai-assistants-migration",
+          "openai-openapi"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "videos-api",
+        "label": "the Videos API",
+        "paths": [
+          "/v1/videos"
+        ],
+        "shutdownDate": "2026-09-24",
+        "replacement": null,
+        "announcement": "2026-03-24: Sora 2 video generation models and Videos API",
+        "sources": [
+          "openai-deprecations",
+          "openai-openapi"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "prompts-api",
+        "label": "the reusable prompts API",
+        "paths": [
+          "/v1/prompts"
+        ],
+        "shutdownDate": "2026-11-30",
+        "replacement": "Move reusable prompt content into your application code (see OpenAI's \"Migrate from prompt objects\" guide)",
+        "announcement": "2026-06-03: Reusable prompts",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "evals-api",
+        "label": "the Evals API",
+        "paths": [
+          "/v1/evals"
+        ],
+        "shutdownDate": "2026-11-30",
+        "replacement": "Promptfoo (see OpenAI's \"Moving from OpenAI Evals to Promptfoo\" guide)",
+        "note": "Existing evals become read-only on 2026-10-31.",
+        "announcement": "2026-06-03: Evals platform",
+        "sources": [
+          "openai-deprecations",
+          "openai-openapi"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "fine-tuning-job-creation",
+        "label": "fine-tuning job creation",
+        "paths": [
+          "/v1/fine_tuning/jobs"
+        ],
+        "exactPath": true,
+        "method": "POST",
+        "shutdownDate": "2027-01-06",
+        "replacement": null,
+        "note": "OpenAI already stopped job creation for organizations that had never run fine-tuning (2026-05-07) and for those without fine-tuned model inference in the past 60 days (2026-07-02). Inference on existing fine-tuned models continues until the base model is deprecated.",
+        "announcement": "Update to OpenAI's self-serve fine-tuning",
+        "sources": [
+          "openai-deprecations",
+          "openai-openapi"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "realtime-beta",
+        "label": "the Realtime API Beta",
+        "header": {
+          "name": "OpenAI-Beta",
+          "value": "realtime=v1"
+        },
+        "shutdownDate": "2026-05-12",
+        "replacement": "Realtime API (GA interface; see the Realtime beta-to-GA migration guide)",
+        "announcement": "2025-09-15: Realtime API Beta",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "assistants-beta-v1",
+        "label": "the Assistants API beta v1",
+        "header": {
+          "name": "OpenAI-Beta",
+          "value": "assistants=v1"
+        },
+        "shutdownDate": "2024-12-18",
+        "replacement": "OpenAI-Beta: assistants=v2",
+        "note": "The Assistants API itself was shut down on 2026-08-26.",
+        "announcement": "2024-10-02: Assistants API beta v1",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "fine-tunes-endpoint",
+        "label": "the /v1/fine-tunes endpoint",
+        "paths": [
+          "/v1/fine-tunes"
+        ],
+        "shutdownDate": "2024-01-04",
+        "replacement": "/v1/fine_tuning/jobs",
+        "announcement": "2023-08-22: Fine-tunes endpoint",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "edits-endpoint",
+        "label": "the /v1/edits endpoint",
+        "paths": [
+          "/v1/edits"
+        ],
+        "shutdownDate": "2024-01-04",
+        "replacement": "/v1/chat/completions",
+        "announcement": "2023-07-06: GPT and embeddings / Edit models & endpoint",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "engines-endpoint",
+        "label": "the /v1/engines endpoint",
+        "paths": [
+          "/v1/engines"
+        ],
+        "shutdownDate": "2022-12-03",
+        "replacement": "/v1/models",
+        "announcement": "2022-06-03: Legacy endpoints",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "search-endpoint",
+        "label": "the /v1/search endpoint",
+        "paths": [
+          "/v1/search"
+        ],
+        "shutdownDate": "2022-12-03",
+        "replacement": "See the search transition guide: https://help.openai.com/en/articles/6272952-search-transition-guide",
+        "announcement": "2022-06-03: Legacy endpoints",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "classifications-endpoint",
+        "label": "the /v1/classifications endpoint",
+        "paths": [
+          "/v1/classifications"
+        ],
+        "shutdownDate": "2022-12-03",
+        "replacement": "See the classifications transition guide: https://help.openai.com/en/articles/6272941-classifications-transition-guide",
+        "announcement": "2022-06-03: Legacy endpoints",
+        "sources": [
+          "openai-deprecations"
+        ],
+        "verification": "verified"
+      },
+      {
+        "id": "answers-endpoint",
+        "label": "the /v1/answers endpoint",
+        "paths": [
+          "/v1/answers"
+        ],
+        "shutdownDate": "2022-12-03",
+        "replacement": "See the answers transition guide: https://help.openai.com/en/articles/6233728-answers-transition-guide",
+        "announcement": "2022-06-03: Legacy endpoints",
+        "sources": [
+          "openai-deprecations"
+        ],
         "verification": "verified"
       }
     ]

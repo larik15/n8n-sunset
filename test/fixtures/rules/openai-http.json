@@ -50,6 +50,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.OPENAI_BASE }}/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"model\": \"gpt-4\" }"
+      },
+      "id": "5",
+      "name": "Via OpenAI credential",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [800, 0]
     }
   ],
   "connections": {}

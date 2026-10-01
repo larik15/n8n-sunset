@@ -4,6 +4,7 @@ Scan a folder of n8n workflow exports for what is about to break:
 
 - **n8n 3.0** (scheduled for October 2026): removed nodes, removed node versions and options, and behavior changes you can see in workflow JSON.
 - **OpenAI model shutdowns**: deprecated model IDs in OpenAI nodes, in HTTP Request nodes calling `api.openai.com`, and in Code node source.
+- **OpenAI endpoint shutdowns**: calls to deprecated endpoints such as the Assistants API (`/v1/assistants`, `/v1/threads`) in HTTP Request and Code nodes.
 
 Each finding shows the workflow, the node, what breaks, the date, and the suggested replacement. The exit code is 1 when anything breaking takes effect within 30 days, so you can run it in CI.
 
@@ -108,11 +109,34 @@ All 125 model IDs from OpenAI's deprecations page, with their aliases (for examp
 
 Dated snapshots of model families listed as such (for example `gpt-realtime-2025-08-28`) also match. Fine-tuned IDs (`ft:<base>:...`) are matched by their base model and marked unverified.
 
-### Not covered
+### OpenAI endpoints (`openai/endpoint-shutdown`)
 
-- Instance-level n8n 3.0 changes you won't find in workflow JSON: the Docker-only deployment requirement, environment variables, SSRF block list, storage paths, the task runner timeout, Chat Hub, and others. See the [n8n 3.0 breaking changes](https://docs.n8n.io/changelog/v30-breaking-changes) page for those.
-- Azure OpenAI deployments (Azure has its own retirement schedule) and models served by other providers.
-- Model IDs that are only known at run time, such as a model name read from a database.
+Every endpoint, API, and beta header that OpenAI's deprecations page lists as shut down or scheduled to shut down:
+
+| Endpoint | Shutdown | Replacement (from OpenAI) |
+| --- | --- | --- |
+| Assistants API: `/v1/assistants`, `/v1/threads` (and everything below them) | 2026-08-26 | Responses API and Conversations API |
+| Videos API: `/v1/videos` | 2026-09-24 | None listed |
+| Reusable prompts: `/v1/prompts` | 2026-11-30 | Move prompt content into your application code |
+| Evals API: `/v1/evals` (read-only from 2026-10-31) | 2026-11-30 | Promptfoo |
+| Creating fine-tuning jobs: `POST /v1/fine_tuning/jobs` | 2027-01-06 (earlier for some organizations) | None listed |
+| Realtime API Beta: header `OpenAI-Beta: realtime=v1` | 2026-05-12 | Realtime API (GA) |
+| Assistants API beta v1: header `OpenAI-Beta: assistants=v1` | 2024-12-18 | `assistants=v2` (the Assistants API itself shut down later) |
+| `/v1/fine-tunes`, `/v1/edits` | 2024-01-04 | `/v1/fine_tuning/jobs`, `/v1/chat/completions` |
+| `/v1/engines`, `/v1/search`, `/v1/classifications`, `/v1/answers` | 2022-12-03 | `/v1/models`, or OpenAI's transition guides |
+
+Where it looks:
+
+- **HTTP Request nodes** (including the HTTP Request tool for AI Agents) whose URL is on `api.openai.com` or that use OpenAI credentials: the URL, including `={{ $vars.OPENAI_BASE }}/threads`-style URLs when the node uses OpenAI credentials, and the request headers. The fine-tuning entry only matches `POST` requests to the exact path.
+- **Code nodes** that mention `api.openai.com` or an `OpenAI-Beta` header: `/v1/...` paths and `OpenAI-Beta` header values in the source. URLs on other hosts are ignored, so another API's `/v1/search` is not reported.
+
+### Limitations
+
+- **Model IDs in code and prompt text only count when quoted.** In Code nodes, and in OpenAI node fields other than the model, a model ID is recognized only as a string literal such as `'gpt-4'` or `"gpt-4"`. This keeps a variable named `o1` or a prompt that mentions "davinci" from being reported, but it misses IDs assembled at run time (`'gpt-' + version`), IDs read from data, and IDs inside a longer string such as a URL built in code.
+- **Azure OpenAI is skipped.** Azure OpenAI nodes and nodes using Azure OpenAI credentials are not checked: they reference deployment names, and Azure retires models on its own schedule, so OpenAI's dates don't apply. Models served by other providers are not checked either.
+- **Endpoints in code need the `/v1` prefix.** A Code node that builds URLs from a base variable (`base + '/threads'`) is not flagged, and neither are OpenAI SDK calls (`openai.beta.threads.create`). Code that doesn't mention `api.openai.com` is not checked for endpoints at all. In code the request method is unknown, so the `POST`-only fine-tuning entry is reported as unverified there.
+- **n8n's OpenAI node is checked for models, not endpoints.** Its "Assistant" resource calls the Assistants API, but n8n-sunset does not flag that resource yet. The separate OpenAI Assistant node is reported as removed in n8n 3.0, with a note about the Assistants API shutdown.
+- **Instance-level n8n 3.0 changes** you won't find in workflow JSON are out of scope: the Docker-only deployment requirement, environment variables, SSRF block list, storage paths, the task runner timeout, Chat Hub, and others. See the [n8n 3.0 breaking changes](https://docs.n8n.io/changelog/v30-breaking-changes) page for those.
 
 ## Data and sources
 
@@ -122,9 +146,10 @@ All dates and replacements live in [`data/sunset-registry.json`](data/sunset-reg
 | --- | --- |
 | [docs.n8n.io/changelog/v30-breaking-changes](https://docs.n8n.io/changelog/v30-breaking-changes) ([n8n-docs repo](https://github.com/n8n-io/n8n-docs/blob/main/docs/changelog/v30-breaking-changes.md)) | What n8n 3.0 removes or changes, the release month, and the replacements |
 | [n8n source at n8n@2.41.5](https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages) and the [3.x branch](https://github.com/n8n-io/n8n/tree/3.x) | The node type IDs behind the display names in the docs, node versions, and parameter defaults. The removed nodes are confirmed to be absent from the 3.x branch |
-| [platform.openai.com/docs/deprecations](https://platform.openai.com/docs/deprecations) | Model IDs, aliases, shutdown dates, and recommended replacements |
+| [platform.openai.com/docs/deprecations](https://platform.openai.com/docs/deprecations) | Model IDs, aliases, deprecated endpoints, beta headers, shutdown dates, and recommended replacements |
+| [OpenAI OpenAPI spec](https://github.com/openai/openai-openapi) and the [Assistants migration guide](https://developers.openai.com/api/docs/assistants/migration) | The URL paths behind entries the deprecations page names only as a product (Assistants API, Videos API, Evals API, creating fine-tuning jobs). In the spec, `/assistants` and `/threads` are tagged "Assistants", and the guide covers threads, messages, and runs as part of the Assistants API |
 
-Anything that could not be fully confirmed from the official page is marked `unverified`. That covers dates that conflict on the page itself, multi-output nodes the docs don't name, and fine-tuned model matches. Unverified findings show `[unverified]` in the table and carry a `verificationNote` in the JSON.
+Anything that could not be fully confirmed from the official page is marked `unverified`. That covers dates that conflict on the page itself, multi-output nodes the docs don't name, fine-tuned model matches, and method-specific endpoints found in code. Unverified findings show `[unverified]` in the table and carry a `verificationNote` in the JSON.
 
 ## JSON output
 
@@ -144,6 +169,7 @@ Anything that could not be fully confirmed from the official page is marked `unv
       "file": "workflows/lead-scoring.json",
       "node": "GPT-4 chat model",
       "nodeType": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "category": "openai-model",
       "ruleId": "openai/model-shutdown",
       "severity": "breaking",
       "message": "OpenAI shuts down model \"gpt-4\" (alias of gpt-4-0613); API calls will fail.",
@@ -162,6 +188,8 @@ Anything that could not be fully confirmed from the official page is marked `unv
   "errors": []
 }
 ```
+
+`category` is `n8n-3.0`, `openai-model`, or `openai-endpoint`. Endpoint findings carry `endpoint` (for example `"/v1/threads"` or `"OpenAI-Beta: realtime=v1"`) instead of `model`.
 
 ## Development
 

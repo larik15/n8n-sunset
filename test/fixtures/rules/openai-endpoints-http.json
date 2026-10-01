@@ -1,0 +1,118 @@
+{
+  "id": "wf-openai-endpoints-http",
+  "name": "Assistant support bot",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/threads",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "OpenAI-Beta", "value": "assistants=v2" }] }
+      },
+      "id": "1",
+      "name": "Create thread",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "=https://api.openai.com/v1/threads/{{ $json.thread_id }}/runs" },
+      "id": "2",
+      "name": "Run assistant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.OPENAI_BASE }}/assistants",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi"
+      },
+      "id": "3",
+      "name": "List assistants",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/realtime/sessions",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "OpenAI-Beta", "value": "realtime=v1" }] }
+      },
+      "id": "4",
+      "name": "Realtime beta session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://api.openai.com/v1/videos" },
+      "id": "5",
+      "name": "Create video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://api.openai.com/v1/fine_tuning/jobs" },
+      "id": "6",
+      "name": "Create fine-tuning job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "url": "https://api.openai.com/v1/fine_tuning/jobs" },
+      "id": "7",
+      "name": "List fine-tuning jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://api.openai.com/v1/fine_tuning/jobs/ftjob-123/cancel" },
+      "id": "8",
+      "name": "Cancel fine-tuning job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 0]
+    },
+    {
+      "parameters": { "requestMethod": "POST", "url": "https://api.openai.com/v1/engines/davinci/completions" },
+      "id": "9",
+      "name": "Legacy engines call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1600, 0]
+    },
+    {
+      "parameters": { "url": "https://api.openai.com/v1/evals" },
+      "id": "10",
+      "name": "List evals tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [1800, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://api.openai.com/v1/responses" },
+      "id": "11",
+      "name": "Responses call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 0]
+    },
+    {
+      "parameters": { "url": "https://api.example.com/v1/search?q=n8n" },
+      "id": "12",
+      "name": "Other API search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 0]
+    }
+  ],
+  "connections": {}
+}

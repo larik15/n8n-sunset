@@ -1,0 +1,66 @@
+{
+  "id": "wf-openai-endpoints-code",
+  "name": "Assistant code",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const base = 'https://api.openai.com/v1';\nconst headers = { Authorization: `Bearer ${$env.OPENAI_KEY}`, 'OpenAI-Beta': 'assistants=v2' };\nconst assistant = await fetch(base + '/assistants', { headers });\nconst thread = await this.helpers.httpRequest({ method: 'POST', url: 'https://api.openai.com/v1/threads', headers });\nconst hits = await this.helpers.httpRequest({ url: 'https://api.example.com/v1/search?q=x' });\nreturn [{ json: { thread, hits } }];"
+      },
+      "id": "1",
+      "name": "Assistants via helpers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "url = \"https://api.openai.com/v1/prompts/pmpt_123\"\nreturn [{\"json\": {\"url\": url}}]"
+      },
+      "id": "2",
+      "name": "Prompt objects in Python",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ws = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-realtime', {\n  headers: { 'OpenAI-Beta': 'realtime=v1' },\n});\nreturn [];"
+      },
+      "id": "3",
+      "name": "Realtime beta socket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = await this.helpers.httpRequest({ method: 'POST', url: 'https://api.openai.com/v1/fine_tuning/jobs', body: $json });\nreturn [{ json: job }];"
+      },
+      "id": "4",
+      "name": "Fine-tune in code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "jsCode": "const r = await fetch('https://api.vendor.io/v1/assistants');\nreturn [{ json: await r.json() }];" },
+      "id": "5",
+      "name": "Other vendor assistants",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const answer = await this.helpers.httpRequest({ method: 'POST', url: 'https://api.openai.com/v1/responses', body: $json });\nconst clip = await this.helpers.httpRequest({ url: 'https://api.vendor.io/v1/videos/42' });\nreturn [{ json: { answer, clip } }];"
+      },
+      "id": "6",
+      "name": "OpenAI plus other video API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    }
+  ],
+  "connections": {}
+}

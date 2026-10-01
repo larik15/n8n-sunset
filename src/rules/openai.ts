@@ -48,24 +48,33 @@ export function matchModelId(token: string, index: ModelIndex): ModelMatch | und
   return undefined;
 }
 
-const CODE_TYPES = new Set([
+export const CODE_TYPES = new Set([
   'n8n-nodes-base.code',
   'n8n-nodes-base.function',
   'n8n-nodes-base.functionItem',
   '@n8n/n8n-nodes-langchain.code',
   '@n8n/n8n-nodes-langchain.toolCode',
 ]);
-const HTTP_TYPES = new Set(['n8n-nodes-base.httpRequest', '@n8n/n8n-nodes-langchain.toolHttpRequest']);
-const OPENAI_HOST = 'api.openai.com';
+// httpRequestTool is the HTTP Request node attached to an AI Agent as a tool.
+export const HTTP_TYPES = new Set(['n8n-nodes-base.httpRequest', 'n8n-nodes-base.httpRequestTool', '@n8n/n8n-nodes-langchain.toolHttpRequest']);
+export const OPENAI_HOST = 'api.openai.com';
+export const HTTP_WHERE = `HTTP Request to ${OPENAI_HOST}`;
+
+export function mentionsOpenAiHost(node: WorkflowNode): boolean {
+  return [...stringLeaves(node.parameters)].some((leaf) => leaf.value.includes(OPENAI_HOST));
+}
+
+/** An HTTP Request node whose URL is on api.openai.com, or that authenticates with OpenAI credentials. */
+export function isOpenAiHttpNode(node: WorkflowNode): boolean {
+  return HTTP_TYPES.has(node.type) && (node.credentials?.openAiApi !== undefined || mentionsOpenAiHost(node));
+}
 
 type Strategy = { kind: 'http' | 'llm' | 'code' | 'other'; where: string };
 
 function strategyFor(node: WorkflowNode): Strategy | null {
   if (node.type === STICKY_NOTE) return null;
   if (CODE_TYPES.has(node.type)) return { kind: 'code', where: 'Code node source' };
-  if (HTTP_TYPES.has(node.type) && [...stringLeaves(node.parameters)].some((leaf) => leaf.value.includes(OPENAI_HOST))) {
-    return { kind: 'http', where: `HTTP Request to ${OPENAI_HOST}` };
-  }
+  if (isOpenAiHttpNode(node)) return { kind: 'http', where: HTTP_WHERE };
   // Azure OpenAI uses deployment names and its own retirement schedule, so it is left out.
   if (/azure/i.test(node.type) || node.credentials?.azureOpenAiApi !== undefined) return null;
   if (/openai/i.test(node.type) || node.credentials?.openAiApi !== undefined) return { kind: 'llm', where: 'OpenAI node parameter' };
