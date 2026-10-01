@@ -49,11 +49,47 @@ interface Hit {
   unverifiedNote?: string;
 }
 
+/** n8n nodes that call a deprecated endpoint themselves, such as the OpenAI node's "Assistant" resource. */
+function checkNodeUsages(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
+  const params = node.parameters ?? {};
+  const findings: RuleFinding[] = [];
+  for (const endpoint of registry.openai.endpoints) {
+    for (const usage of endpoint.nodeUsages ?? []) {
+      if (node.type !== usage.nodeType || (node.typeVersion ?? 1) > usage.maxTypeVersion || params[usage.parameter] !== usage.value) continue;
+      const operation = typeof params.operation === 'string' ? params.operation : usage.defaultOperation;
+      const known = usage.operations[operation];
+      const path = known?.path ?? [...new Set(Object.values(usage.operations).map((op) => op.path))].join(', ');
+      const past = endpoint.shutdownDate <= asOf;
+      let message =
+        `OpenAI ${past ? 'has shut down' : 'shuts down'} ${endpoint.label} (${path}), ` +
+        `which this node's "${known?.name ?? operation}" operation calls; calls ${past ? 'fail' : 'will fail'}.`;
+      if (endpoint.note) message += ` ${endpoint.note}`;
+      const note = usage.verification === 'unverified' ? usage.verificationNote : endpoint.verification === 'unverified' ? endpoint.verificationNote : undefined;
+      findings.push({
+        category: 'openai-endpoint',
+        ruleId: 'openai/endpoint-shutdown',
+        severity: 'breaking',
+        message,
+        date: endpoint.shutdownDate,
+        datePrecision: 'day',
+        replacement: usage.replacement,
+        verification: note ? 'unverified' : 'verified',
+        ...(note ? { verificationNote: note } : {}),
+        sources: sourceUrls(registry, [...endpoint.sources, ...usage.sources]),
+        endpoint: path,
+        locations: [`${usage.label}: ${usage.parameter}`],
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
+  const usageFindings = checkNodeUsages(node, registry, asOf);
   const leaves = [...stringLeaves(node.parameters)];
   const isHttp = isOpenAiHttpNode(node);
   const isCode = CODE_TYPES.has(node.type) && (mentionsOpenAiHost(node) || leaves.some((leaf) => /openai-beta/i.test(leaf.value)));
-  if (!isHttp && !isCode) return [];
+  if (!isHttp && !isCode) return usageFindings;
   const where = isHttp ? HTTP_WHERE : CODE_WHERE;
 
   const hits = new Map<string, Hit>();
@@ -89,7 +125,7 @@ export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asO
     }
   }
 
-  return [...hits.values()].map(({ endpoint, matched, paths, unverifiedNote }) => {
+  const pathFindings = [...hits.values()].map(({ endpoint, matched, paths, unverifiedNote }) => {
     const past = endpoint.shutdownDate <= asOf;
     const shown = matched.join(', ');
     const what = endpoint.label.includes(shown) ? endpoint.label : `${endpoint.label} (${shown})`;
@@ -111,4 +147,5 @@ export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asO
       locations: paths.map((path) => `${where}: ${path}`),
     } satisfies RuleFinding;
   });
+  return [...usageFindings, ...pathFindings];
 }

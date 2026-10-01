@@ -19,6 +19,11 @@
       "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages",
       "accessed": "2026-10-01"
     },
+    "n8n-openai-node": {
+      "title": "n8n OpenAI node source at n8n@2.41.5 (version map in OpenAi.node.ts, Assistant resource in v1/OpenAiV1.node.ts, its API calls in v1/actions/assistant/)",
+      "url": "https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
+      "accessed": "2026-10-01"
+    },
     "n8n-3x-branch": {
       "title": "n8n 3.x branch (removed nodes are absent from its node manifests)",
       "url": "https://github.com/n8n-io/n8n/tree/599ca716ee91b06d8f2026d432f8a09a9953f0a8",
@@ -654,7 +659,7 @@
   "openai": {
     "source": "openai-deprecations",
     "matching": "Model IDs and listed aliases match exactly. Entries from the \"Model family / snapshot\" table (matchDatedSnapshots) also match dated snapshots such as <id>-2025-08-28. Fine-tuned IDs (ft:<base>:...) are matched to the page's ft-<base> labels by base-model prefix; those matches are reported as unverified.",
-    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method.",
+    "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set) in HTTP Request nodes that call api.openai.com or use OpenAI credentials, and in Code nodes that mention api.openai.com. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, at or below maxTypeVersion (a missing typeVersion counts as 1), with the parameter set to the value.",
     "excluded": "Left out because they are not endpoints a workflow calls: Agent Builder (a dashboard product), the 2024 restriction on new fine-tuning training for babbage-002 and davinci-002, and the 2026-05-07 and 2026-07-02 fine-tuning restrictions that only apply to some organizations (noted on the fine-tuning job creation entry).",
     "models": [
       {
@@ -1607,6 +1612,44 @@
           "openai-deprecations",
           "openai-assistants-migration",
           "openai-openapi"
+        ],
+        "nodeUsages": [
+          {
+            "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+            "label": "OpenAI node, \"Assistant\" resource",
+            "maxTypeVersion": 1.8,
+            "parameter": "resource",
+            "value": "assistant",
+            "defaultOperation": "message",
+            "operations": {
+              "create": {
+                "name": "Create an Assistant",
+                "path": "/v1/assistants"
+              },
+              "deleteAssistant": {
+                "name": "Delete an Assistant",
+                "path": "/v1/assistants"
+              },
+              "list": {
+                "name": "List Assistants",
+                "path": "/v1/assistants"
+              },
+              "message": {
+                "name": "Message an Assistant",
+                "path": "/v1/threads"
+              },
+              "update": {
+                "name": "Update an Assistant",
+                "path": "/v1/assistants"
+              }
+            },
+            "replacement": "OpenAI node version 2: the Text resource's \"Message a Model\" operation (Responses API) or the Conversation resource (Conversations API)",
+            "note": "Type versions 1 to 1.8 run the node's V1 implementation, whose \"Assistant\" resource calls /assistants directly and /threads through the OpenAI SDK (\"Message an Assistant\", the default operation). Version 2 has no Assistant resource; its Text \"Message a Model\" operation calls /responses and its Conversation resource calls /conversations. n8n's 3.x branch still ships versions 1 to 1.8.",
+            "verification": "verified",
+            "sources": [
+              "n8n-openai-node"
+            ]
+          }
         ],
         "verification": "verified"
       },

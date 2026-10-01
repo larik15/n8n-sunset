@@ -79,6 +79,49 @@ describe('HTTP Request nodes calling deprecated OpenAI endpoints', () => {
   });
 });
 
+describe('n8n OpenAI node, "Assistant" resource', () => {
+  const result = scanFixture('rules/openai-node-assistant.json');
+  const N8N_OPENAI_NODE = 'https://github.com/n8n-io/n8n/tree/n8n@2.41.5/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi';
+
+  it('flags the default "Message an Assistant" operation, which calls /v1/threads', () => {
+    const findings = endpointFindings(result, 'Ask support assistant');
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      category: 'openai-endpoint',
+      severity: 'breaking',
+      nodeType: '@n8n/n8n-nodes-langchain.openAi',
+      endpoint: '/v1/threads',
+      date: '2026-08-26',
+      withinWindow: true,
+      verification: 'verified',
+      replacement:
+        'OpenAI node version 2: the Text resource\'s "Message a Model" operation (Responses API) or the Conversation resource (Conversations API)',
+      locations: ['OpenAI node, "Assistant" resource: resource'],
+    });
+    expect(findings[0]!.message).toBe(
+      'OpenAI has shut down the Assistants API (/v1/threads), which this node\'s "Message an Assistant" operation calls; calls fail.',
+    );
+    expect(findings[0]!.sources).toEqual(expect.arrayContaining(['https://platform.openai.com/docs/deprecations', N8N_OPENAI_NODE]));
+  });
+
+  it('maps other operations to /v1/assistants, including nodes without a typeVersion', () => {
+    expect(endpointFindings(result, 'Create support assistant')).toMatchObject([{ endpoint: '/v1/assistants' }]);
+    expect(endpointFindings(result, 'Create support assistant')[0]!.message).toContain('"Create an Assistant" operation');
+    expect(endpointFindings(result, 'List assistants, no version')).toMatchObject([{ endpoint: '/v1/assistants' }]);
+  });
+
+  it('leaves version 2, the Text resource and other node types alone', () => {
+    expect(endpointFindings(result, 'Message a model (v2)')).toEqual([]);
+    expect(endpointFindings(result, 'Text message (v1)')).toEqual([]);
+    expect(endpointFindings(result, 'Version 2 node')).toEqual([]);
+    expect(endpointFindings(result, 'Other OpenAI node type')).toEqual([]);
+  });
+
+  it('reports nothing else for these nodes', () => {
+    expect(result.findings.map((f) => f.node).sort()).toEqual(['Ask support assistant', 'Create support assistant', 'List assistants, no version']);
+  });
+});
+
 describe('Code nodes calling deprecated OpenAI endpoints', () => {
   const result = scanFixture('rules/openai-endpoints-code.json');
 

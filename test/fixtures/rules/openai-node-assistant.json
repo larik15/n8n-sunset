@@ -1,0 +1,82 @@
+{
+  "id": "wf-openai-node-assistant",
+  "name": "Helpdesk assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "assistant",
+        "assistantId": { "__rl": true, "value": "asst_abc123", "mode": "list", "cachedResultName": "Support" },
+        "prompt": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Ask support assistant",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "credentials": { "openAiApi": { "id": "1", "name": "OpenAI" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "operation": "create",
+        "modelId": { "__rl": true, "value": "gpt-4o-mini", "mode": "list" },
+        "name": "Support",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Create support assistant",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "resource": "assistant", "operation": "list" },
+      "id": "3",
+      "name": "List assistants, no version",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "gpt-5.6-sol", "mode": "list" },
+        "responses": { "values": [{ "content": "={{ $json.chatInput }}" }] }
+      },
+      "id": "4",
+      "name": "Message a model (v2)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "operation": "message",
+        "modelId": { "__rl": true, "value": "gpt-4o-mini", "mode": "list" },
+        "messages": { "values": [{ "content": "Hello" }] }
+      },
+      "id": "5",
+      "name": "Text message (v1)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "resource": "assistant", "operation": "list" },
+      "id": "6",
+      "name": "Version 2 node",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "resource": "assistant", "model": { "__rl": true, "value": "gpt-5.6-sol", "mode": "list" } },
+      "id": "7",
+      "name": "Other OpenAI node type",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {}
+}

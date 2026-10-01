@@ -23,6 +23,7 @@ describe('sunset registry', () => {
       ...registry.n8n.changes.flatMap((c) => c.sources),
       registry.openai.source,
       ...registry.openai.endpoints.flatMap((e) => e.sources),
+      ...registry.openai.endpoints.flatMap((e) => (e.nodeUsages ?? []).flatMap((u) => u.sources)),
     ];
     for (const ref of refs) expect(registry.sources, ref).toHaveProperty([ref]);
   });
@@ -75,6 +76,17 @@ describe('sunset registry', () => {
       paths: ['/v1/assistants', '/v1/threads'],
       shutdownDate: '2026-08-26',
     });
+  });
+
+  it('maps every n8n node operation that calls an endpoint to one of its paths', () => {
+    const usages = registry.openai.endpoints.flatMap((e) => (e.nodeUsages ?? []).map((u) => ({ endpoint: e, usage: u })));
+    expect(usages.length).toBeGreaterThan(0);
+    for (const { endpoint, usage } of usages) {
+      expect(usage.operations, usage.label).toHaveProperty([usage.defaultOperation]);
+      for (const op of Object.values(usage.operations)) expect(endpoint.paths, usage.label).toContain(op.path);
+      expect(VERIFICATION).toContain(usage.verification);
+    }
+    expect(usages[0]!.usage).toMatchObject({ nodeType: '@n8n/n8n-nodes-langchain.openAi', maxTypeVersion: 1.8, parameter: 'resource', value: 'assistant' });
   });
 
   it('keeps aliases with their snapshot, as the official page lists them', () => {

@@ -54,6 +54,24 @@ export interface OpenAiModel {
   fineTuneOf?: string;
 }
 
+/** An n8n node that calls a deprecated OpenAI endpoint itself, e.g. the OpenAI node's "Assistant" resource. */
+export interface OpenAiNodeUsage {
+  nodeType: string;
+  label: string;
+  /** Highest typeVersion that has this option; a missing typeVersion counts as 1. */
+  maxTypeVersion: number;
+  parameter: string;
+  value: string;
+  /** Operation used when the workflow JSON leaves it out (n8n omits defaults). */
+  defaultOperation: string;
+  operations: Record<string, { name: string; path: string }>;
+  replacement: string;
+  note?: string;
+  verification: Verification;
+  verificationNote?: string;
+  sources: string[];
+}
+
 export interface OpenAiEndpoint {
   id: string;
   /** How the message names it, e.g. "the Assistants API". */
@@ -65,6 +83,7 @@ export interface OpenAiEndpoint {
   method?: string;
   /** A request header that selects the deprecated API, e.g. OpenAI-Beta: realtime=v1. */
   header?: { name: string; value: string };
+  nodeUsages?: OpenAiNodeUsage[];
   shutdownDate: string;
   replacement: string | null;
   announcement: string;
