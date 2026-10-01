@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { colorEnabled } from '../src/cli.js';
 import { daysBetween, isIsoDay, utcToday } from '../src/dates.js';
 import { dedupeOverlapping } from '../src/rules/openai-endpoints.js';
+import { apiBase } from '../src/api.js';
 import { urlHost } from '../src/rules/openai.js';
 import { displayWidth, padEnd, wrap } from '../src/width.js';
 import { readWorkflows } from '../src/workflows.js';
@@ -123,5 +124,14 @@ describe('urlHost', () => {
   it('returns undefined when an expression sets the host', () => {
     expect(urlHost('={{ $vars.OPENAI_BASE }}/threads')).toBeUndefined();
     expect(urlHost('https://{{ $vars.host }}/v1')).toBeUndefined();
+  });
+});
+
+describe('apiBase', () => {
+  it('normalizes trailing and doubled slashes', () => {
+    for (const input of ['https://n8n.example.com/api/v1', 'https://n8n.example.com/api/v1/', 'https://n8n.example.com//api/v1', 'https://n8n.example.com//api//v1//']) {
+      expect(apiBase(input).href, input).toBe('https://n8n.example.com/api/v1');
+    }
+    expect(apiBase('https://example.com/n8n//api/v1/').pathname).toBe('/n8n/api/v1');
   });
 });

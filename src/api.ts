@@ -23,7 +23,8 @@ export function apiBase(baseUrl: string): URL {
     throw new Error(`N8N_API_URL is not a URL: "${baseUrl}"`);
   }
   if (!/^https?:$/.test(url.protocol)) throw new Error(`N8N_API_URL must use http or https, got "${url.protocol}"`);
-  url.pathname = url.pathname.replace(/\/+$/, '');
+  // Collapse repeated slashes ("https://host//api/v1/") and drop trailing ones.
+  url.pathname = url.pathname.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
   if (!/\/api\/v\d+$/.test(url.pathname)) {
     throw new Error(`N8N_API_URL must end with the API version path, for example https://n8n.example.com/api/v1 (got "${url.origin}${url.pathname}")`);
   }
