@@ -4,6 +4,7 @@ import type { Registry, Severity } from './registry.js';
 import { checkN8nNode } from './rules/n8n.js';
 import { buildModelIndex, checkOpenAiModels } from './rules/openai.js';
 import { checkOpenAiEndpoints } from './rules/openai-endpoints.js';
+import { buildProviderIndex, checkProviderModels } from './rules/providers.js';
 import type { Workflow } from './workflows.js';
 
 export interface ScanOptions {
@@ -70,6 +71,8 @@ function compareFindings(a: Finding, b: Finding): number {
 export function scanWorkflows(workflows: Workflow[], registry: Registry, options: ScanOptions): ScanResult {
   const targets = options.targets ?? [];
   const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
+  const anthropic = buildProviderIndex('anthropic', registry.anthropic.models);
+  const gemini = buildProviderIndex('gemini', registry.gemini.models);
   const findings: Finding[] = [];
 
   for (const workflow of workflows) {
@@ -78,6 +81,8 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
         ...checkN8nNode(node, registry),
         ...checkOpenAiModels(node, registry, index, options.asOf),
         ...checkOpenAiEndpoints(node, registry, options.asOf),
+        ...checkProviderModels(node, registry, anthropic, options.asOf),
+        ...checkProviderModels(node, registry, gemini, options.asOf),
       ];
       for (const { trigger, ...f } of ruleFindings) {
         const daysUntil = trigger.kind === 'date' ? daysBetween(options.asOf, trigger.date) : null;

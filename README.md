@@ -8,9 +8,11 @@ Scan n8n workflows for what is about to break:
 
 - **OpenAI model shutdowns**: deprecated model IDs in OpenAI nodes, in HTTP Request nodes calling `api.openai.com`, and in Code node source.
 - **OpenAI endpoint shutdowns**: calls to deprecated endpoints such as the Assistants API (`/v1/assistants`, `/v1/threads`), the Videos API, and reusable prompt objects, in HTTP Request and Code nodes and in n8n's own OpenAI nodes.
+- **Anthropic model retirements**: retired or soon-to-retire Claude model IDs in the Anthropic Chat Model and Anthropic nodes (the Chat Model is what an AI Agent or chain uses), in HTTP Request nodes calling `api.anthropic.com`, and in Code node source.
+- **Google Gemini model shutdowns**: Gemini API model IDs in the Google Gemini nodes (chat model, Gemini, embeddings), in HTTP Request nodes calling `generativelanguage.googleapis.com`, and in Code node source.
 - **n8n 3.0**: removed nodes, removed node versions and options, and behavior changes you can see in workflow JSON. These apply when you upgrade, not on a date.
 
-It reads workflows straight from a running n8n through its public API (`--from-api`), or from exported JSON files. Each finding shows the workflow, the node, what breaks, when, and the suggested replacement. The exit code is 1 when an OpenAI shutdown takes effect within 30 days or already has, so you can run it in CI. Add `--target 3.0` to also fail on what breaks when you upgrade to n8n 3.0.
+It reads workflows straight from a running n8n through its public API (`--from-api`), or from exported JSON files. Each finding shows the workflow, the node, what breaks, when, and the suggested replacement. The exit code is 1 when an OpenAI, Anthropic, or Gemini shutdown takes effect within 30 days or already has, so you can run it in CI. Add `--target 3.0` to also fail on what breaks when you upgrade to n8n 3.0.
 
 ## How this differs from n8n's Migration Report
 
@@ -18,7 +20,7 @@ n8n 2.x has a built-in [Migration Report](https://docs.n8n.io/changelog/v20-migr
 
 Use the Migration Report to prepare an n8n upgrade. Use n8n-sunset for what the report doesn't do:
 
-- **OpenAI shutdowns.** The report checks n8n's breaking changes only; none of its rules look at OpenAI model IDs or endpoints, which OpenAI retires on its own schedule, whether or not you upgrade n8n.
+- **Model and endpoint shutdowns.** The report checks n8n's breaking changes only; none of its rules look at OpenAI, Anthropic, or Gemini model IDs, or at OpenAI endpoints, which the providers retire on their own schedules, whether or not you upgrade n8n.
 - **CI and scheduled checks.** n8n-sunset runs anywhere Node.js runs and sets an exit code, so a scheduled job fails before a shutdown date. It needs an API key or exported files, not an owner or admin login.
 - **Offline.** It can scan exported JSON, such as workflows kept in Git, without a running instance.
 
@@ -34,7 +36,7 @@ $ npx n8n-sunset@latest examples/workflows --as-of 2026-10-02
 
 n8n-sunset  ·  3 workflows scanned  ·  as of 2026-10-02 (UTC)  ·  window 30 days
 
-Upcoming shutdowns (2 findings)
+Upcoming shutdowns (3 findings)
 
 SEVERITY  WHEN        WORKFLOW       NODE           WHAT BREAKS                  REPLACEMENT
 ────────  ──────────  ─────────────  ─────────────  ───────────────────────────  ───────────────────
@@ -53,7 +55,15 @@ BREAKING  2026-11-30  Lead           Summarize      OpenAI shuts down reusable  
                                                     at Code node source: jsCode  prompt objects"
                                                                                  guide)
 
-Already shut down (2 findings)
+BREAKING  2026-11-30  Weekly digest  Anthropic      Anthropic retires model      claude-sonnet-5-5
+          in 59d      (inactive)     Chat Model     "claude-sonnet-4-5" (alias
+                                                    of
+                                                    claude-sonnet-4-5-20250929)
+                                                    ; API calls will fail.
+                                                    at Anthropic node
+                                                    parameter: model.value
+
+Already shut down (4 findings)
 
 SEVERITY  WHEN        WORKFLOW       NODE           WHAT BREAKS                  REPLACEMENT
 ────────  ──────────  ─────────────  ─────────────  ───────────────────────────  ───────────────────
@@ -66,6 +76,20 @@ BREAKING  2026-08-26  Support bot    Ask helpdesk   OpenAI has shut down the    
                                                     at OpenAI node:              resource
                                                     resource=assistant,          (Conversations API)
                                                     operation=message (default)
+
+BREAKING  2026-06-01  Lead           Ask Gemini     Google has shut down Gemini  gemini-3.6-flash
+          123d ago    enrichment                    API model
+                                                    "gemini-2.0-flash"; API
+                                                    calls fail.
+                                                    at HTTP Request to
+                                                    generativelanguage.googleap
+                                                    is.com: url
+
+BREAKING  2025-10-28  Support bot    Classify       Anthropic has retired model  claude-sonnet-4-6
+          339d ago                   intent         "claude-3-5-sonnet-20241022
+                                                    "; API calls fail.
+                                                    at Anthropic node
+                                                    parameter: model.value
 
 BREAKING  2025-10-27  Weekly digest  OpenAI Chat    OpenAI has shut down model   o4-mini
           340d ago    (inactive)     Model          "o1-mini"; API calls fail.
@@ -94,11 +118,13 @@ BREAKING  breaks on   Weekly digest  Monday 8am     Cron node is removed in n8n 
           upgrade to  (inactive)                    3.0.                         node
           n8n 3.0
 
-7 findings in 7 nodes across 3 workflows: 7 breaking, 0 behavior changes, 0 warnings, 0 info.
-Data: n8n 3.0 changes apply when you upgrade (the release is scheduled for 2026-10); OpenAI shutdown
-dates from https://developers.openai.com/api/docs/deprecations. Registry 2026-10-01.
+10 findings in 10 nodes across 3 workflows: 10 breaking, 0 behavior changes, 0 warnings, 0 info.
+Data: n8n 3.0 changes apply when you upgrade (the release is scheduled for 2026-10); model shutdown
+dates from https://developers.openai.com/api/docs/deprecations (OpenAI),
+https://platform.claude.com/docs/en/about-claude/model-deprecations (Anthropic) and
+https://ai.google.dev/gemini-api/docs/deprecations (Google Gemini). Registry 2026-10-06.
 
-3 breaking findings in 3 nodes across 3 workflows take effect within 30 days or already have.
+5 breaking findings in 5 nodes across 3 workflows take effect within 30 days or already have.
 3 breaking findings in 3 nodes break on upgrade to n8n 3.0; add --target 3.0 to fail on them.
 ```
 <!-- example-table:end -->
@@ -116,7 +142,7 @@ npx n8n-sunset@latest --from-api        # straight from n8n
 npx n8n-sunset@latest ./workflows       # from exported files
 ```
 
-`@latest` matters: the shutdown dates ship inside the package, and OpenAI announces new deprecations all the time. n8n-sunset warns when its data is more than 30 days older than the date you scan for, and fails (exit 2) once it is more than 90 days older; change that limit with `--max-registry-age`.
+`@latest` matters: the shutdown dates ship inside the package, and the providers announce new deprecations all the time. n8n-sunset warns when its data is more than 30 days older than the date you scan for, and fails (exit 2) once it is more than 90 days older; change that limit with `--max-registry-age`.
 
 ### From the n8n API
 
@@ -180,7 +206,7 @@ Dates are calendar days in UTC, so a CI runner gives the same result in any time
 | Code | Meaning |
 | --- | --- |
 | `0` | No breaking finding takes effect within the window |
-| `1` | A **breaking** OpenAI shutdown takes effect within the window, or already has. With `--target 3.0`, also any breaking change on upgrade to n8n 3.0 |
+| `1` | A **breaking** OpenAI, Anthropic, or Gemini shutdown takes effect within the window, or already has. With `--target 3.0`, also any breaking change on upgrade to n8n 3.0 |
 | `2` | A problem with the input or the data: usage error, unreadable path, no workflows found, a JSON file that isn't a readable n8n workflow or a symbolic link (unless `--allow-skipped`), an n8n API error, or a registry that is missing, invalid, or older than `--max-registry-age`. Takes precedence over 1 |
 
 Only `BREAKING` findings affect the exit code, and only on enabled nodes:
@@ -191,7 +217,7 @@ Only `BREAKING` findings affect the exit code, and only on enabled nodes:
 
 ## In CI
 
-OpenAI shutdowns happen whether or not you touch your workflows, so the useful setup is a scheduled job that reads the current workflows from n8n. A GitHub Actions example that runs every weekday:
+Model shutdowns happen whether or not you touch your workflows, so the useful setup is a scheduled job that reads the current workflows from n8n. A GitHub Actions example that runs every weekday:
 
 ```yaml
 name: n8n-sunset
@@ -216,7 +242,7 @@ jobs:
 
 The job fails in two cases, and both need attention:
 
-- **Exit 1**: a breaking OpenAI shutdown takes effect within 30 days, or already has. Fix the workflows the report lists.
+- **Exit 1**: a breaking OpenAI, Anthropic, or Gemini shutdown takes effect within 30 days, or already has. Fix the workflows the report lists.
 - **Exit 2**: something is wrong with the input or the data: the API rejected the key or couldn't be reached, or n8n-sunset's bundled data is older than `--max-registry-age` (90 days). The log says which.
 
 Before upgrading n8n, run once more with `--target 3.0`. If your workflows live in a Git repository (for example through n8n's source control), scan the files on every push instead: `npx n8n-sunset@latest ./workflows`.
@@ -293,6 +319,45 @@ Where it looks:
   - The **OpenAI node** at type versions 2 to 2.3, Text resource, "Message a Model" operation, with a Prompt ID set in its "Prompt" option. n8n sends it to the Responses API as a reusable prompt object reference.
   - The **OpenAI Assistant node** (`@n8n/n8n-nodes-langchain.openAiAssistant`), all versions. Both of its operations, "Use Existing Assistant" (the default) and "Use New Assistant", call `/v1/assistants` and then run the assistant on a thread (`/v1/threads`). It has been failing since 2026-08-26. n8n 3.0 also removes this node, and that finding is still reported in the upgrade section. Because the n8n docs suggest the OpenAI node's "Assistant" resource as its replacement, which calls the same shut-down API, n8n-sunset suggests the OpenAI node version 2 instead.
 
+### Anthropic models (`anthropic/model-retirement`)
+
+All 20 model IDs that Anthropic's [model deprecations page](https://platform.claude.com/docs/en/about-claude/model-deprecations) lists with a retirement date, plus the one alias Anthropic's docs spell out: `claude-sonnet-4-5` points at the most recent dated snapshot of that version, `claude-sonnet-4-5-20250929`. The replacement is the one Anthropic recommends for that model, as listed on the page. Still ahead:
+
+| Retirement | Model | Anthropic's recommended replacement |
+| --- | --- | --- |
+| 2026-11-30 | `claude-sonnet-4-5-20250929` (alias: `claude-sonnet-4-5`) | `claude-sonnet-5-5` |
+
+The other 19 have already been retired, from `claude-1.0` (2024-11-06) to `claude-opus-4-1-20250805` (2026-08-05); they are reported as "Anthropic has retired model ...". Only models with an announced date are reported: active models that the page shows with "Not sooner than ..." are floors, not announcements, and `claude-mythos-preview` is deprecated with its retirement "to be announced". The full list, with dates, replacements, and the page section that announced each one, is in the registry file.
+
+Where it looks:
+
+- **Anthropic nodes** (any node type containing "anthropic", or using Anthropic credentials): the Anthropic Chat Model, which AI Agents and chains use as their model, and the Anthropic node. It reads the model parameter, including expressions such as `={{ $json.large ? 'claude-opus-4-1-20250805' : 'claude-haiku-4-5-20251001' }}`, and only the `value` of a resource locator, never the editor's cached display name. If `options.baseURL` points somewhere other than `api.anthropic.com`, the finding is an unverified **warning**.
+- **HTTP Request nodes calling Anthropic** (the url field is on `api.anthropic.com`, or an expression URL plus Anthropic credentials; also the HTTP Request tool for AI Agents): quoted model IDs in the request body and `model` name/value pairs in body or query parameters, for every node version, exactly as for OpenAI.
+- **Code nodes**: quoted model IDs such as `'claude-2.1'`.
+- **Any other node**: values assigned to a field named "model", such as an Edit Fields (Set) assignment. These are unverified **warnings**, since the value may never reach Anthropic.
+- **Not checked:** Claude on Amazon Bedrock and on Google Vertex AI (their nodes are skipped). Those platforms set their own retirement schedules, as Anthropic's page says.
+
+### Google Gemini models (`gemini/model-shutdown`)
+
+All 54 model IDs that have a shutdown date on Google's [Gemini API deprecations page](https://ai.google.dev/gemini-api/docs/deprecations) (Gemini, embedding, Imagen, Veo, Live, and robotics models), or that the [release notes](https://ai.google.dev/gemini-api/docs/changelog) announce with a date but the table doesn't carry (8 experimental and preview models, listed without a replacement because Google names none). **Google says the table dates are the earliest possible shutdown dates and that it confirms the exact date in advance**, so a finding for a date that is still ahead says so. Still ahead:
+
+| Shutdown (earliest) | Model | Google's recommended replacement |
+| --- | --- | --- |
+| 2026-10-22 | `veo-3.1-lite-generate-preview` | `gemini-omni-1.1-flash` |
+| 2026-10-22 | `veo-3.1-generate-preview` | `gemini-omni-1.1-flash` |
+| 2026-10-22 | `veo-3.1-fast-generate-preview` | `gemini-omni-1.1-flash` |
+| 2027-05-07 | `gemini-3.1-flash-lite` | `gemini-3.5-flash-lite` |
+| 2028-05-14 | `gemini-embedding-001` | `gemini-embedding-2` |
+
+The other 49 are past their dates, from `embedding-001` (2025-10-30) to `gemini-2.5-flash-image` (2026-10-02). Rows that say "No shutdown date announced" are left out, even when a replacement is listed, and so are managed agents.
+
+Where it looks:
+
+- **Google Gemini nodes** (any node type containing "googleGemini", or using Google Gemini (PaLM) credentials): the Google Gemini Chat Model, the Google Gemini node, and the Embeddings Google Gemini node. n8n stores names as `models/gemini-2.5-flash`; the finding names the bare ID. Same rules as for Anthropic nodes for expressions, resource locators, and `options.baseURL`.
+- **HTTP Request nodes calling the Gemini API** (the url field is on `generativelanguage.googleapis.com`, or an expression URL plus Gemini credentials): the model in the URL path (`/v1beta/models/gemini-2.0-flash:generateContent`), in the request body (the OpenAI-compatible endpoint, `batchEmbedContents`), and in body or query parameters. A model named in both the URL and the body is one finding with both locations.
+- **Code nodes** and **other nodes with a "model" field**: as for Anthropic.
+- **Not checked:** Vertex AI (nodes and `aiplatform.googleapis.com` URLs), which has its own model lifecycle.
+
 ## Limitations
 
 - **Model IDs in code and request bodies only count when quoted.** In Code nodes, in HTTP request bodies, and in OpenAI node model fields, a model ID is recognized only as a string literal such as `'gpt-4'` or `"gpt-4"`. This keeps a variable named `o1` or a prompt that mentions "davinci" from being reported, but it misses IDs assembled at run time (`'gpt-' + version`), IDs read from data, and IDs inside a longer string such as a URL built in code.
@@ -301,11 +366,14 @@ Where it looks:
 - **OpenAI credentials with a custom base URL can't be seen.** The credential's own base URL isn't part of a workflow export or of the API's workflow data, so a node that relies on it (rather than `options.baseURL`) is treated as calling OpenAI.
 - **Endpoints in code need the full path.** A Code node that builds URLs from a base variable (`` `${base}/threads` ``) is not flagged, and neither are OpenAI SDK calls (`openai.beta.threads.create`). Code that doesn't mention `api.openai.com` is not checked for endpoints at all. In code the request method is unknown, so the `POST`-only fine-tuning entry is reported as unverified there.
 - **Only these n8n node usages are checked for built-in endpoint calls:** the OpenAI node's "Assistant" resource (versions 1 to 1.8), its "Video" resource and "Message a Model" prompt option (versions 2 to 2.3), and the OpenAI Assistant node. Other n8n nodes that call OpenAI internally, such as the OpenAI Chat Model, are checked for deprecated models only.
+- **Anthropic and Gemini: only announced dates are reported.** A model that is not in the registry may still be on its way out. Anthropic's "Not sooner than" dates and Gemini's "No shutdown date announced" rows are not deadlines. Models that Google's release notes only report as "now shut down", such as the Gemini 1.5 family, have no earlier dated announcement and are not reported.
+- **Anthropic aliases are not covered beyond `claude-sonnet-4-5`.** No official page lists names such as `claude-3-5-haiku-latest`, `claude-sonnet-4-0`, or `claude-opus-4-1`, so a workflow using one of them is not reported even if the model behind it is retired. Gemini's `-latest` aliases are not listed either.
+- **Anthropic and Gemini findings use the same model-ID rules as OpenAI:** quoted IDs in code and request bodies, a literal provider URL for HTTP nodes that use generic authentication, and no checks for gateways (OpenRouter-style `anthropic/claude-...` IDs) or for IDs assembled at run time. Claude on Bedrock or Vertex AI, and Gemini on Vertex AI, are skipped.
 - **Instance-level n8n 3.0 changes** you won't find in workflow JSON are out of scope: the Docker-only deployment requirement, environment variables, SSRF block list, storage paths, the task runner timeout, Chat Hub, and others. See the [n8n 3.0 breaking changes](https://docs.n8n.io/changelog/v30-breaking-changes) page, and n8n's Migration Report, for those.
 
 ## Data and sources
 
-All dates and replacements live in [`data/sunset-registry.json`](data/sunset-registry.json). Each entry cites its source and access date (2026-10-01, or 2026-10-02 for the Migration Report and openai-python); GitHub links are pinned to the commit that was read:
+All dates and replacements live in [`data/sunset-registry.json`](data/sunset-registry.json). Each entry cites its source and access date (2026-10-01, 2026-10-02 for the Migration Report and openai-python, and 2026-10-06 for the Anthropic and Gemini pages); GitHub links are pinned to the commit that was read:
 
 | Source | Used for |
 | --- | --- |
@@ -315,6 +383,10 @@ All dates and replacements live in [`data/sunset-registry.json`](data/sunset-reg
 | [n8n OpenAI node source (`a9c858b`)](https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi) | Which type versions have the "Assistant" and "Video" resources and the "Message a Model" prompt option (`OpenAi.node.ts` maps 1 to 1.8 to `v1/OpenAiV1.node.ts` and 2 to 2.3 to `v2/OpenAiV2.node.ts`), the resource and operation values, and the endpoints each operation calls |
 | [n8n OpenAI Assistant node source (`a9c858b`)](https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/agents/OpenAiAssistant/OpenAiAssistant.node.ts) and [LangChain's `OpenAIAssistantRunnable` (`6b914bc`)](https://github.com/langchain-ai/langchainjs/blob/6b914bceb4acd4664b12091770a2ddcbf5d8457e/libs/langchain-classic/src/experimental/openai_assistant/index.ts) (`@langchain/classic` 1.0.27, the version n8n uses) | The OpenAI Assistant node's versions, its `mode` parameter, and its Assistants API calls: `beta.assistants.update` or `createAssistant`, then `beta.threads` runs |
 | [developers.openai.com/api/docs/deprecations](https://developers.openai.com/api/docs/deprecations) (formerly platform.openai.com/docs/deprecations, which now redirects there) | Model IDs, aliases, deprecated endpoints, beta headers, shutdown dates, and recommended replacements |
+| [platform.claude.com/docs/en/about-claude/model-deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) (formerly docs.anthropic.com, which redirects there) | Anthropic model IDs, the retirement dates from its "Deprecation history" tables, and recommended replacements |
+| [Anthropic: Model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions) | That dateless aliases such as `claude-sonnet-4-5` point at the most recent dated snapshot of that version |
+| [ai.google.dev/gemini-api/docs/deprecations](https://ai.google.dev/gemini-api/docs/deprecations) | Gemini API model IDs, shutdown dates (the earliest possible dates), and recommended replacements |
+| [ai.google.dev/gemini-api/docs/changelog](https://ai.google.dev/gemini-api/docs/changelog) | Dated shutdown announcements that the deprecations table does not carry |
 | [OpenAI OpenAPI spec (`c300cf2`)](https://github.com/openai/openai-openapi/blob/c300cf282956e5f29c23f00def1d68ab44f8d7ab/openapi.yaml) and the [Assistants migration guide](https://developers.openai.com/api/docs/assistants/migration) | The URL paths behind entries the deprecations page names only as a product (Assistants API, Videos API, Evals API, creating fine-tuning jobs). In the spec, `/assistants` and `/threads` are tagged "Assistants", and the guide covers threads, messages, and runs as part of the Assistants API |
 | [OpenAI's "Migrate from prompt objects" guide](https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object) | Responses calls with `prompt: { id: "pmpt_..." }` are the usage to migrate away from before prompt objects shut down |
 | [OpenAI Cookbook legacy fine-tuning example (`2182005`)](https://github.com/openai/openai-cookbook/blob/2182005bcaf5a5cdd96bb46fb9995d08730e7b91/examples/fine-tuned_qa/olympics-3-train-qa.ipynb) and [openai-python v0.28.1 (`f7ccce1`)](https://github.com/openai/openai-python/blob/f7ccce126325ea35b6e5224ab954652c97a74896/openai/cli.py) | The ID formats of legacy `/v1/fine-tunes` models: `curie:ft-<org>-<timestamp>`, and `{base_model}:ft-{org-title}:{suffix}-{timestamp}` when created with a suffix |
@@ -333,18 +405,18 @@ $ npx n8n-sunset@latest examples/workflows --as-of 2026-10-02 --json | jq '{exit
   "exitCode": 1,
   "summary": {
     "workflowsScanned": 3,
-    "findings": 7,
-    "nodesAffected": 7,
+    "findings": 10,
+    "nodesAffected": 10,
     "workflowsAffected": 3,
-    "breaking": 7,
+    "breaking": 10,
     "behaviorChanges": 0,
     "warnings": 0,
     "info": 0,
-    "upcoming": 2,
-    "past": 2,
+    "upcoming": 3,
+    "past": 4,
     "onUpgrade": 3,
-    "exitFindings": 3,
-    "exitNodes": 3,
+    "exitFindings": 5,
+    "exitNodes": 5,
     "exitWorkflows": 3,
     "filesSkipped": 0,
     "fileErrors": 0,
@@ -385,8 +457,8 @@ $ npx n8n-sunset@latest examples/workflows --as-of 2026-10-02 --json | jq '{exit
 
 The full report also has `asOf`, `windowDays`, `targets`, `registry` (version, the n8n release note, and every source), `findings`, `warnings`, `skipped`, `errors`, and `symlinks`.
 
-- `category` is `n8n-3.0`, `openai-model`, or `openai-endpoint`; `severity` is `breaking`, `behavior-change`, `warning`, or `info`.
-- `trigger` is `date` for OpenAI shutdowns and `upgrade` for n8n 3.0. Upgrade findings have `date` and `daysUntil` set to `null`, `upgradeTo: "3.0"`, `status: "on-upgrade"`, and a `when` label such as `"breaks on upgrade to n8n 3.0"`.
+- `category` is `n8n-3.0`, `openai-model`, `openai-endpoint`, `anthropic-model`, or `gemini-model`; `severity` is `breaking`, `behavior-change`, `warning`, or `info`.
+- `trigger` is `date` for model and endpoint shutdowns and `upgrade` for n8n 3.0. Upgrade findings have `date` and `daysUntil` set to `null`, `upgradeTo: "3.0"`, `status: "on-upgrade"`, and a `when` label such as `"breaks on upgrade to n8n 3.0"`.
 - `status` is `upcoming`, `past` (including the shutdown day itself), or `on-upgrade`. `countsTowardExit` says whether the finding set exit code 1.
 - `file` is the file path, or with `--from-api` the workflow's URL in the n8n editor. `workflowActive` and `workflowArchived` appear when the source includes them.
 - Endpoint findings carry `endpoint` (for example `"/v1/threads"`, `"OpenAI-Beta: realtime=v1"`, or `"prompt object pmpt_abc123"`) instead of `model`.

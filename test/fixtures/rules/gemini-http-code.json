@@ -1,0 +1,123 @@
+{
+  "id": "wf-gemini-http",
+  "name": "Gemini REST calls",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=PLACEHOLDER",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"contents\": [{\"parts\": [{\"text\": \"Hello\"}]}]}"
+      },
+      "id": "1",
+      "name": "generateContent (model in the URL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"gemini-2.0-flash-lite\", \"messages\": [{\"role\": \"user\", \"content\": \"Hi\"}]}"
+      },
+      "id": "2",
+      "name": "OpenAI-compatible endpoint (model in the body)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"requests\": [{\"model\": \"models/text-embedding-004\", \"content\": {\"parts\": [{\"text\": \"a\"}]}}]}"
+      },
+      "id": "3",
+      "name": "Same model in URL and body",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/l/publishers/google/models/gemini-2.0-flash:generateContent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"gemini-2.0-flash\"}"
+      },
+      "id": "4",
+      "name": "Vertex AI endpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GEMINI_BASE }}/models/gemini-2.0-flash-001:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi"
+      },
+      "id": "5",
+      "name": "Expression URL with Gemini credentials",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": { "googlePalmApi": { "id": "1", "name": "Google Gemini(PaLM) Api" } },
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.com/proxy/models/gemini-2.0-flash:generateContent"
+      },
+      "id": "6",
+      "name": "Some other host",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"contents\": [{\"parts\": [{\"text\": \"Compare gemini-2.0-flash with text-embedding-004\"}]}]}"
+      },
+      "id": "7",
+      "name": "Current model, old names only in the prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = 'models/gemini-2.0-flash';\nconst b = \"gemini-pro-latest\";\nconst c = 'Use gemini-2.0-flash-lite wisely';\nconst gemini20flash = 1;\nreturn [{ json: { a, b, c, gemini20flash } }];"
+      },
+      "id": "8",
+      "name": "Code with model names",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 0]
+    },
+    {
+      "parameters": {
+        "assignments": { "assignments": [{ "id": "a", "name": "model", "value": "gemini-2.0-flash-001", "type": "string" }] },
+        "options": {}
+      },
+      "id": "9",
+      "name": "Set model name",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1600, 0]
+    }
+  ],
+  "connections": {}
+}

@@ -24,6 +24,8 @@ const HELP = `Usage: n8n-sunset <path...> [options]
 
 Scan n8n workflows for:
   - OpenAI models being shut down (gpt-4, gpt-3.5-turbo, o1-mini, ...)
+  - Anthropic models being retired (claude-3-5-sonnet-20241022, claude-sonnet-4-5, ...)
+  - Google Gemini models being shut down (gemini-2.0-flash, text-embedding-004, ...)
   - OpenAI endpoints being shut down (Assistants API, Videos API, reusable
     prompt objects, Evals API, OpenAI-Beta headers, legacy /v1 endpoints)
   - nodes removed or changed in n8n 3.0 (these apply when you upgrade)
@@ -51,7 +53,8 @@ Options:
 
 Exit codes:
   0  no breaking finding takes effect within the window
-  1  a breaking OpenAI shutdown takes effect within the window or already has
+  1  a breaking OpenAI, Anthropic or Gemini shutdown takes effect within the window
+     or already has
      (with --target 3.0, also any breaking change on upgrade to n8n 3.0);
      findings on disabled nodes never count
   2  a problem with the input or the data: usage error, unreadable path, no

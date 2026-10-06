@@ -240,7 +240,7 @@ describe('registry age and --registry', () => {
     expect((await run([target, '--as-of', '2026-10-31'])).stderr).toBe('');
     const old = await run([target, '--as-of', '2026-11-15']);
     expect(old.code).toBe(EXIT_OK);
-    expect(old.stderr).toContain('the bundled registry is from 2026-10-01, 45 days before 2026-11-15');
+    expect(old.stderr).toContain('the bundled registry is from 2026-10-06, 40 days before 2026-11-15');
     expect(old.stderr).toContain('Update n8n-sunset.');
   });
 
@@ -251,11 +251,11 @@ describe('registry age and --registry', () => {
   });
 
   it('exits 2 once the registry is older than --max-registry-age (default 90 days)', async () => {
-    expect((await run([target, '--as-of', '2026-12-30'])).code).toBe(EXIT_OK); // 90 days: still allowed
-    const stale = await run([target, '--as-of', '2026-12-31']);
+    expect((await run([target, '--as-of', '2027-01-04'])).code).toBe(EXIT_OK); // 90 days: still allowed
+    const stale = await run([target, '--as-of', '2027-01-05']);
     expect(stale.code).toBe(EXIT_ERROR);
-    expect(stale.stderr).toContain('the registry is from 2026-10-01, 91 days before 2026-12-31, older than --max-registry-age 90');
-    expect((await run([target, '--as-of', '2026-12-31', '--max-registry-age', '120'])).code).toBe(EXIT_OK);
+    expect(stale.stderr).toContain('the registry is from 2026-10-06, 91 days before 2027-01-05, older than --max-registry-age 90');
+    expect((await run([target, '--as-of', '2027-01-05', '--max-registry-age', '120'])).code).toBe(EXIT_OK);
     expect((await run([target, '--as-of', '2026-10-20', '--max-registry-age', '10'])).code).toBe(EXIT_ERROR);
     expect((await run([target, '--max-registry-age', 'old'])).stderr).toContain('--max-registry-age must be a whole number');
   });
@@ -409,7 +409,7 @@ describe('--from-api', () => {
       const { code, report, stderr } = await json(['--from-api', '--as-of', '2026-10-02'], { env: env('/ok/api/v1/'), cwd: dir });
       expect(stderr).toBe('');
       expect(code).toBe(EXIT_BREAKING);
-      expect(report.summary).toMatchObject({ workflowsScanned: 3, findings: 7, exitFindings: 3 });
+      expect(report.summary).toMatchObject({ workflowsScanned: 3, findings: 10, exitFindings: 5 });
       expect(requests).toEqual([
         { path: '/ok/api/v1/workflows', query: { limit: '250', excludePinnedData: 'true' }, key: KEY },
         { path: '/ok/api/v1/workflows', query: { limit: '250', excludePinnedData: 'true', cursor: 'MTIz+/ZQ==' }, key: KEY },
@@ -470,7 +470,12 @@ describe('usage errors', () => {
 
   it('prints help and version', async () => {
     expect(await run(['--help'])).toMatchObject({ code: EXIT_OK, stdout: expect.stringContaining('Usage: n8n-sunset <path...> [options]') });
-    expect((await run(['--help'])).stdout).toContain('--from-api');
-    expect(await run(['--version'])).toMatchObject({ code: EXIT_OK, stdout: '0.1.0\n' });
+    const help = (await run(['--help'])).stdout;
+    expect(help).toContain('--from-api');
+    expect(help).toContain('Anthropic models being retired');
+    expect(help).toContain('Google Gemini models being shut down');
+    const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+    expect(version).toBe('0.2.0');
+    expect(await run(['--version'])).toMatchObject({ code: EXIT_OK, stdout: `${version}\n` });
   });
 });

@@ -186,8 +186,9 @@ describe('shutdown day itself', () => {
     expect(result.findings[0]!.message).toContain('has shut down');
   });
 
-  it('pins the as-of date used by the other tests', () => {
-    expect(AS_OF).toBe(registry.registryVersion);
+  it('pins the as-of date used by the other tests to the day the OpenAI data was collected', () => {
+    expect(AS_OF).toBe(registry.sources['openai-deprecations']!.accessed);
+    expect(registry.registryVersion >= AS_OF).toBe(true);
   });
 });
 

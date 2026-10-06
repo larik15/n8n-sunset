@@ -266,10 +266,16 @@ export function renderTable(result: ScanResult, registry: Registry, load: LoadRe
   const unread = load.errors.length + load.skipped.length;
   if (unread) prose(`Could not read ${plural(unread, 'file')} as n8n workflows (reasons in the warnings).`, c.yellow);
 
-  const openai = registry.sources[registry.openai.source];
+  const providers: [string, string, string][] = [
+    [registry.openai.source, 'OpenAI', 'the OpenAI deprecations page'],
+    [registry.anthropic.source, 'Anthropic', 'the Anthropic deprecations page'],
+    [registry.gemini.source, 'Google Gemini', 'the Gemini deprecations page'],
+  ];
+  const dates = providers.filter(([key]) => key).map(([key, name, fallback]) => `${registry.sources[key]?.url ?? fallback} (${name})`);
+  const datesText = dates.length > 1 ? `${dates.slice(0, -1).join(', ')} and ${dates.at(-1)}` : (dates[0] ?? 'the providers');
   prose(
     `Data: n8n ${upgrade} changes apply when you upgrade (the release is scheduled for ${registry.n8n.release.date}); ` +
-      `OpenAI shutdown dates from ${openai?.url ?? 'the OpenAI deprecations page'}. Registry ${registry.registryVersion}.`,
+      `model shutdown dates from ${datesText}. Registry ${registry.registryVersion}.`,
     c.dim,
   );
   out.push('');

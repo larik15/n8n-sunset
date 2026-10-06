@@ -55,6 +55,32 @@ export interface OpenAiModel {
   fineTuneOf?: string;
 }
 
+/** A model with a retirement date announced by Anthropic or Google (Gemini API). */
+export interface ProviderModel {
+  id: string;
+  /** Other names that resolve to this model, as documented by the provider. */
+  aliases?: string[];
+  /** The announced retirement or shutdown date, YYYY-MM-DD. */
+  shutdownDate: string;
+  replacement: string | null;
+  /** Where the provider announced it, e.g. "2026-09-30: Claude Sonnet 4.5 model". */
+  announcement: string;
+  verification: Verification;
+  verificationNote?: string;
+  note?: string;
+  /** Registry source keys for this entry. */
+  sources: string[];
+  /** Registry source keys that document the aliases; cited only when a workflow uses an alias. */
+  aliasSources?: string[];
+}
+
+export interface ProviderModels {
+  source: string;
+  matching: string;
+  excluded: string;
+  models: ProviderModel[];
+}
+
 /** An n8n node that calls a deprecated OpenAI endpoint itself, e.g. the OpenAI node's "Assistant" resource. */
 export interface OpenAiNodeUsage {
   nodeType: string;
@@ -145,7 +171,12 @@ export interface Registry {
     legacyFineTunes: LegacyFineTunes;
     endpoints: OpenAiEndpoint[];
   };
+  anthropic: ProviderModels;
+  gemini: ProviderModels;
 }
+
+/** What a registry written before Anthropic and Gemini support gets, so `--registry` files from 0.1.x keep working. */
+const noProviderModels = (): ProviderModels => ({ source: '', matching: '', excluded: '', models: [] });
 
 const DEFAULT_REGISTRY_URL = new URL('../data/sunset-registry.json', import.meta.url);
 
@@ -160,7 +191,25 @@ function referencedSources(registry: Registry): string[] {
     ...openai.legacyFineTunes.sources,
     ...(openai.legacyFineTunes.suffixForm?.sources ?? []),
     ...openai.endpoints.flatMap((e) => [...e.sources, ...(e.nodeUsages ?? []).flatMap((u) => u.sources)]),
+    ...[registry.anthropic, registry.gemini].flatMap((p) => [
+      ...(p.source ? [p.source] : []),
+      ...p.models.flatMap((m) => [...m.sources, ...(m.aliasSources ?? [])]),
+    ]),
   ];
+}
+
+/** Throws when a provider model entry is malformed: missing id, bad date, no source, or a duplicate ID or alias. */
+function validateProviderModels(name: string, section: ProviderModels): void {
+  const names = new Set<string>();
+  for (const model of section.models) {
+    if (typeof model.id !== 'string' || !model.id) throw new Error(`Registry ${name} has a model without an id`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(model.shutdownDate)) throw new Error(`Registry ${name} model ${model.id} has an invalid shutdownDate "${model.shutdownDate}"`);
+    if (!Array.isArray(model.sources) || model.sources.length === 0) throw new Error(`Registry ${name} model ${model.id} cites no source`);
+    for (const label of [model.id, ...(model.aliases ?? [])]) {
+      if (names.has(label)) throw new Error(`Registry ${name} lists "${label}" twice`);
+      names.add(label);
+    }
+  }
 }
 
 /** Throws when the registry is missing a section or refers to a source it doesn't define. */
@@ -168,6 +217,10 @@ export function validateRegistry(registry: Registry): Registry {
   if (!registry?.sources || !registry.n8n?.release || !registry.openai?.models || !registry.openai.endpoints || !registry.openai.legacyFineTunes) {
     throw new Error('Registry is missing required sections (sources, n8n, openai)');
   }
+  registry.anthropic ??= noProviderModels();
+  registry.gemini ??= noProviderModels();
+  validateProviderModels('anthropic', registry.anthropic);
+  validateProviderModels('gemini', registry.gemini);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(registry.registryVersion)) throw new Error(`Registry has an invalid registryVersion "${registry.registryVersion}"`);
   const unknown = [...new Set(referencedSources(registry).filter((key) => !registry.sources[key]))];
   if (unknown.length) throw new Error(`Registry references unknown source${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`);

@@ -1,6 +1,6 @@
 import type { Severity, Verification } from './registry.js';
 
-export type Category = 'n8n-3.0' | 'openai-model' | 'openai-endpoint';
+export type Category = 'n8n-3.0' | 'openai-model' | 'openai-endpoint' | 'anthropic-model' | 'gemini-model';
 
 /**
  * When a finding takes effect: on a calendar date (OpenAI shutdowns), or when you

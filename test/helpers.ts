@@ -3,8 +3,11 @@ import { loadRegistry } from '../src/registry.js';
 import { scanWorkflows, type ScanResult } from '../src/scan.js';
 import { loadWorkflows } from '../src/workflows.js';
 
-/** The day the registry data was collected; tests pin it so results never drift. */
+/** The day the OpenAI data was collected; tests pin it so results never drift. */
 export const AS_OF = '2026-10-01';
+
+/** The day the Anthropic and Gemini data was collected; their tests pin it the same way. */
+export const PROVIDERS_AS_OF = '2026-10-06';
 
 export const registry = loadRegistry();
 

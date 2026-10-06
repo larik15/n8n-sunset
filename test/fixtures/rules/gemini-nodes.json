@@ -1,0 +1,100 @@
+{
+  "id": "wf-gemini-nodes",
+  "name": "Content pipeline",
+  "nodes": [
+    {
+      "parameters": { "modelName": "models/gemini-2.0-flash", "options": {} },
+      "id": "1",
+      "name": "Shut down Flash 2.0",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "credentials": { "googlePalmApi": { "id": "1", "name": "Google Gemini(PaLM) Api" } },
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "modelName": "gemini-2.5-flash-image", "options": {} },
+      "id": "2",
+      "name": "Flash Image (shut down 2026-10-02)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "models/veo-3.1-generate-preview", "mode": "list", "cachedResultName": "models/veo-3.1-generate-preview" },
+        "prompt": "A calm sea at dawn"
+      },
+      "id": "3",
+      "name": "Video generation",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "modelName": "models/text-embedding-004" },
+      "id": "4",
+      "name": "Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-2.5-flash" },
+      "id": "5",
+      "name": "Flash 2.5 (no shutdown date)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-3.1-flash-lite" },
+      "id": "6",
+      "name": "Flash-Lite 3.1 (shutdown 2027-05-07)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "modelName": "gemini-2.0-flash" },
+      "id": "7",
+      "name": "Vertex AI model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": { "modelName": "={{ $json.cheap ? 'models/gemini-2.0-flash-lite' : 'models/gemini-2.5-pro' }}" },
+      "id": "8",
+      "name": "Tiered model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1400, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-2.0-flash-exp", "options": { "baseURL": "https://gateway.example.com/gemini" } },
+      "id": "9",
+      "name": "Behind a gateway",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1600, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-3-pro-preview" },
+      "id": "10",
+      "name": "Disabled Pro preview",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "disabled": true,
+      "position": [1800, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-3-flash-preview" },
+      "id": "11",
+      "name": "Flash 3 preview (replacement listed, no date)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [2000, 0]
+    }
+  ],
+  "connections": {}
+}

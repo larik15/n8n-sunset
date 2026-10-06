@@ -36,6 +36,9 @@ describe('sunset registry', () => {
       registry.openai.source,
       ...registry.openai.endpoints.flatMap((e) => e.sources),
       ...registry.openai.endpoints.flatMap((e) => (e.nodeUsages ?? []).flatMap((u) => u.sources)),
+      registry.anthropic.source,
+      registry.gemini.source,
+      ...[...registry.anthropic.models, ...registry.gemini.models].flatMap((m) => [...m.sources, ...(m.aliasSources ?? [])]),
     ];
     for (const ref of refs) expect(registry.sources, ref).toHaveProperty([ref]);
   });
@@ -123,8 +126,75 @@ describe('sunset registry', () => {
   });
 });
 
+describe('Anthropic and Gemini sections', () => {
+  it('cites each provider page with an HTTPS URL and the day it was read', () => {
+    for (const key of ['anthropic-deprecations', 'anthropic-model-ids', 'gemini-deprecations', 'gemini-changelog']) {
+      expect(registry.sources[key]!.url, key).toMatch(/^https:\/\/(platform\.claude\.com|ai\.google\.dev)\//);
+      expect(registry.sources[key]!.accessed, key).toBe('2026-10-06');
+    }
+  });
+
+  it('gives every model an ISO date, a recorded announcement, at least one known source, and a replacement or null', () => {
+    for (const [name, section] of [['anthropic', registry.anthropic], ['gemini', registry.gemini]] as const) {
+      expect(section.models.length, name).toBeGreaterThan(0);
+      const labels = section.models.flatMap((m) => [m.id, ...(m.aliases ?? [])]);
+      expect(new Set(labels).size, `${name} IDs and aliases are unique`).toBe(labels.length);
+      for (const m of section.models) {
+        expect(isIsoDay(m.shutdownDate), `${name} ${m.id}`).toBe(true);
+        expect(m.announcement, m.id).toBeTruthy();
+        expect(m.sources.length, m.id).toBeGreaterThan(0);
+        for (const ref of m.sources) expect(registry.sources, ref).toHaveProperty([ref]);
+        expect(m.replacement === null || m.replacement.length > 0, m.id).toBe(true);
+        expect(VERIFICATION).toContain(m.verification);
+      }
+    }
+  });
+
+  it('only lists dates the providers announced: nothing from a "not sooner than" or "no shutdown date announced" cell', () => {
+    // Anthropic's active models and Gemini's undated models would show up here with a placeholder date.
+    for (const m of [...registry.anthropic.models, ...registry.gemini.models]) {
+      expect(m.shutdownDate, m.id).not.toBe('');
+      expect(m.note ?? '', m.id).not.toMatch(/not sooner|no shutdown date/i);
+    }
+  });
+
+  it('explains what is matched and what is left out', () => {
+    expect(registry.anthropic.matching).toContain('claude-sonnet-4-5');
+    expect(registry.anthropic.excluded).toContain('claude-mythos-preview');
+    expect(registry.gemini.matching).toContain('earliest possible');
+    expect(registry.gemini.excluded).toContain('No shutdown date announced');
+  });
+});
+
 describe('validateRegistry', () => {
   const copy = () => JSON.parse(JSON.stringify(registry)) as typeof registry;
+
+  it('rejects malformed Anthropic or Gemini entries', () => {
+    const badDate = copy();
+    badDate.anthropic.models[0]!.shutdownDate = 'November 30, 2026';
+    expect(() => validateRegistry(badDate)).toThrow('invalid shutdownDate "November 30, 2026"');
+
+    const noSource = copy();
+    noSource.gemini.models[0]!.sources = [];
+    expect(() => validateRegistry(noSource)).toThrow('cites no source');
+
+    const duplicate = copy();
+    duplicate.gemini.models.push({ ...duplicate.gemini.models[0]! });
+    expect(() => validateRegistry(duplicate)).toThrow(`lists "${duplicate.gemini.models[0]!.id}" twice`);
+
+    const unknown = copy();
+    unknown.anthropic.models[0]!.aliasSources = ['missing-e'];
+    expect(() => validateRegistry(unknown)).toThrow('Registry references unknown source: missing-e');
+  });
+
+  it('still loads a registry written before Anthropic and Gemini support (--registry files from 0.1.x)', () => {
+    const old = copy() as unknown as Record<string, unknown>;
+    delete old.anthropic;
+    delete old.gemini;
+    const loaded = validateRegistry(old as never);
+    expect(loaded.anthropic.models).toEqual([]);
+    expect(loaded.gemini.models).toEqual([]);
+  });
 
   it('accepts the bundled registry', () => {
     expect(() => validateRegistry(copy())).not.toThrow();

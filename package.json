@@ -1,11 +1,14 @@
 {
   "name": "n8n-sunset",
-  "version": "0.1.0",
-  "description": "Scan n8n workflow exports for OpenAI model and endpoint shutdowns (Assistants API, Videos API, prompt objects, ...) and for nodes removed or changed in n8n 3.0.",
+  "version": "0.2.0",
+  "description": "Scan n8n workflow exports for OpenAI, Anthropic and Google Gemini model shutdowns, OpenAI endpoint shutdowns (Assistants API, Videos API, prompt objects, ...), and nodes removed or changed in n8n 3.0.",
   "keywords": [
     "n8n",
     "n8n-3",
     "openai",
+    "anthropic",
+    "claude",
+    "gemini",
     "deprecation",
     "migration",
     "workflow",

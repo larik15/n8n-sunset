@@ -49,6 +49,20 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Summarize: ' + $json.notes }] }] }) }}"
+      },
+      "id": "8c2d4e6f-2b1a-4d3c-8e5f-1a2b3c4d5e05",
+      "name": "Ask Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 0]
     }
   ],
   "connections": {

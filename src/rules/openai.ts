@@ -170,24 +170,24 @@ export function quotedTokens(text: string): string[] {
 }
 
 /** Path and query segments of a URL, e.g. ".../realtime?model=gpt-4o-realtime-preview". */
-function urlSegments(text: string): string[] {
+export function urlSegments(text: string): string[] {
   return text.split(/[/?&=#\s]/).filter(Boolean);
 }
 
 /** The whole parameter value, with n8n's "=" expression prefix removed when it holds a plain literal. */
-function wholeValue(text: string): string {
+export function wholeValue(text: string): string {
   const trimmed = text.trim();
   return trimmed.startsWith('=') && !trimmed.includes('{{') ? trimmed.slice(1).trim() : trimmed;
 }
 
 /** A { name: "model", value } pair, as in body parameters or Edit Fields assignments. */
-function isModelPair(leaf: StringLeaf): boolean {
+export function isModelPair(leaf: StringLeaf): boolean {
   const name = (leaf.parent as { name?: unknown } | undefined)?.name;
   return /value/i.test(leaf.key) && typeof name === 'string' && /^model$/i.test(name.trim());
 }
 
 /** A parameter that holds a model: "model", "modelId.value", or a { name: "model", value } pair. */
-function isModelNamed(leaf: StringLeaf): boolean {
+export function isModelNamed(leaf: StringLeaf): boolean {
   return /model/i.test(leaf.path) || isModelPair(leaf);
 }
 
