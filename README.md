@@ -272,7 +272,7 @@ The Call n8n Workflow Tool node (`toolWorkflow`) only offers the Database and Pa
 
 ### OpenAI models (`openai/model-shutdown`)
 
-All 125 model IDs from OpenAI's deprecations page, with their aliases (for example `gpt-4` and `gpt-3.5-turbo`, which shut down on 2026-10-23). Where it looks:
+All 132 model IDs from OpenAI's deprecations page, with their aliases (for example `gpt-4` and `gpt-3.5-turbo`, which shut down on 2026-10-23). Where it looks:
 
 - **OpenAI nodes** (any node type containing "openai", or using OpenAI credentials): the model parameter, including expressions such as `={{ $json.premium ? 'gpt-4-turbo' : 'gpt-4o-mini' }}`. For resource locators it reads only the `value`, never the editor's cached display name. If the node's `options.baseURL` points somewhere other than `api.openai.com` (for example OpenRouter), the finding is an unverified **warning**, because another provider serves the model on its own schedule.
 - **HTTP Request nodes calling OpenAI** (the url field is on `api.openai.com`, with or without a port, or an expression URL plus OpenAI credentials): model IDs in the url field, quoted model IDs in the request body text, and `model` name/value pairs in body or query parameters. That covers every node version: `jsonBody`, `body`, `jsonQuery`, `bodyParameters`, and `queryParameters` from version 3, and `bodyParametersJson`, `queryParametersJson`, `bodyParametersUi`, and `queryParametersUi` in versions 1 and 2. Headers and options are not read for models. Requests to any other host are ignored, even with OpenAI credentials.
@@ -339,7 +339,7 @@ Where it looks:
 
 ### Google Gemini models (`gemini/model-shutdown`)
 
-All 54 model IDs that have a shutdown date on Google's [Gemini API deprecations page](https://ai.google.dev/gemini-api/docs/deprecations) (Gemini, embedding, Imagen, Veo, Live, and robotics models), or that the [release notes](https://ai.google.dev/gemini-api/docs/changelog) announce with a date but the table doesn't carry (8 experimental and preview models, listed without a replacement because Google names none). **Google says the table dates are the earliest possible shutdown dates and that it confirms the exact date in advance**, so a finding for a date that is still ahead says so. Still ahead:
+All 57 model IDs that have a shutdown date on Google's [Gemini API deprecations page](https://ai.google.dev/gemini-api/docs/deprecations) (Gemini, embedding, Imagen, Veo, Live, and robotics models), or that the [release notes](https://ai.google.dev/gemini-api/docs/changelog) announce with a date but the table doesn't carry (8 experimental and preview models, listed without a replacement because Google names none). The three Gemini 1.5 models (`gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-1.5-flash-8b`) are included too, dated 2025-09-29 from the release notes that report them "now shut down"; Google gave no earlier date, so these three are marked unverified. Versioned and alias names of that family (`gemini-1.5-pro-002`, `gemini-1.5-flash-latest`, ...) are not named in that entry and are not matched. **Google says the table dates are the earliest possible shutdown dates and that it confirms the exact date in advance**, so a finding for a date that is still ahead says so. Still ahead:
 
 | Shutdown (earliest) | Model | Google's recommended replacement |
 | --- | --- | --- |
@@ -349,7 +349,7 @@ All 54 model IDs that have a shutdown date on Google's [Gemini API deprecations 
 | 2027-05-07 | `gemini-3.1-flash-lite` | `gemini-3.5-flash-lite` |
 | 2028-05-14 | `gemini-embedding-001` | `gemini-embedding-2` |
 
-The other 49 are past their dates, from `embedding-001` (2025-10-30) to `gemini-2.5-flash-image` (2026-10-02). Rows that say "No shutdown date announced" are left out, even when a replacement is listed, and so are managed agents.
+The other 52 are past their dates, from `gemini-1.5-flash` (2025-09-29) to `gemini-2.5-flash-image` (2026-10-02). Rows that say "No shutdown date announced" are left out, even when a replacement is listed, and so are managed agents.
 
 Where it looks:
 
@@ -366,14 +366,14 @@ Where it looks:
 - **OpenAI credentials with a custom base URL can't be seen.** The credential's own base URL isn't part of a workflow export or of the API's workflow data, so a node that relies on it (rather than `options.baseURL`) is treated as calling OpenAI.
 - **Endpoints in code need the full path.** A Code node that builds URLs from a base variable (`` `${base}/threads` ``) is not flagged, and neither are OpenAI SDK calls (`openai.beta.threads.create`). Code that doesn't mention `api.openai.com` is not checked for endpoints at all. In code the request method is unknown, so the `POST`-only fine-tuning entry is reported as unverified there.
 - **Only these n8n node usages are checked for built-in endpoint calls:** the OpenAI node's "Assistant" resource (versions 1 to 1.8), its "Video" resource and "Message a Model" prompt option (versions 2 to 2.3), and the OpenAI Assistant node. Other n8n nodes that call OpenAI internally, such as the OpenAI Chat Model, are checked for deprecated models only.
-- **Anthropic and Gemini: only announced dates are reported.** A model that is not in the registry may still be on its way out. Anthropic's "Not sooner than" dates and Gemini's "No shutdown date announced" rows are not deadlines. Models that Google's release notes only report as "now shut down", such as the Gemini 1.5 family, have no earlier dated announcement and are not reported.
+- **Anthropic and Gemini: only announced dates are reported.** A model that is not in the registry may still be on its way out. Anthropic's "Not sooner than" dates and Gemini's "No shutdown date announced" rows are not deadlines. Models that Google's release notes only report as "now shut down" are included only where the entry names the model: the Gemini 1.5 family is dated to the notice (2025-09-29) and marked unverified, and its versioned and alias names are not matched.
 - **Anthropic aliases are not covered beyond `claude-sonnet-4-5`.** No official page lists names such as `claude-3-5-haiku-latest`, `claude-sonnet-4-0`, or `claude-opus-4-1`, so a workflow using one of them is not reported even if the model behind it is retired. Gemini's `-latest` aliases are not listed either.
 - **Anthropic and Gemini findings use the same model-ID rules as OpenAI:** quoted IDs in code and request bodies, a literal provider URL for HTTP nodes that use generic authentication, and no checks for gateways (OpenRouter-style `anthropic/claude-...` IDs) or for IDs assembled at run time. Claude on Bedrock or Vertex AI, and Gemini on Vertex AI, are skipped.
 - **Instance-level n8n 3.0 changes** you won't find in workflow JSON are out of scope: the Docker-only deployment requirement, environment variables, SSRF block list, storage paths, the task runner timeout, Chat Hub, and others. See the [n8n 3.0 breaking changes](https://docs.n8n.io/changelog/v30-breaking-changes) page, and n8n's Migration Report, for those.
 
 ## Data and sources
 
-All dates and replacements live in [`data/sunset-registry.json`](data/sunset-registry.json). Each entry cites its source and access date (2026-10-01, 2026-10-02 for the Migration Report and openai-python, and 2026-10-06 for the Anthropic and Gemini pages); GitHub links are pinned to the commit that was read:
+All dates and replacements live in [`data/sunset-registry.json`](data/sunset-registry.json). Each entry cites its source and access date (2026-10-01, 2026-10-02 for the Migration Report and openai-python, and 2026-10-06 for the OpenAI, Anthropic, and Gemini pages); GitHub links are pinned to the commit that was read:
 
 | Source | Used for |
 | --- | --- |

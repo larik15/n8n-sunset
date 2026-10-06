@@ -15,7 +15,7 @@ describe('Gemini registry data', () => {
   const byId = (id: string) => models.find((m) => m.id === id);
 
   it('records every model that has a shutdown date, with its replacement and source', () => {
-    expect(models).toHaveLength(54);
+    expect(models).toHaveLength(57);
     expect(byId('gemini-2.0-flash')).toMatchObject({
       shutdownDate: '2026-06-01',
       replacement: 'gemini-3.6-flash',
@@ -33,6 +33,7 @@ describe('Gemini registry data', () => {
   it('takes dated announcements that only the release notes carry from the release notes, with no invented replacement', () => {
     const fromChangelog = models.filter((m) => m.sources.includes('gemini-changelog'));
     expect(fromChangelog.map((m) => m.id).sort()).toEqual([
+      'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro',
       'gemini-2.0-flash-exp', 'gemini-2.0-flash-exp-image-generation', 'gemini-2.0-flash-thinking-exp', 'gemini-2.0-flash-thinking-exp-01-21',
       'gemini-2.0-flash-thinking-exp-1219', 'gemini-2.0-pro-exp', 'gemini-2.0-pro-exp-02-05', 'gemini-2.5-flash-lite-preview-06-17',
     ]);
@@ -43,7 +44,9 @@ describe('Gemini registry data', () => {
   it('leaves out models with no shutdown date, managed agents and models only reported as already shut down', () => {
     for (const id of [
       'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite', 'gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-3.1-pro-preview',
-      'gemini-3.8-flash', 'antigravity-preview-05-2026', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-omni-flash-preview', 'gemini-pro-latest',
+      'gemini-3.8-flash', 'antigravity-preview-05-2026', 'gemini-omni-flash-preview', 'gemini-pro-latest',
+      // versioned and alias names of the 1.5 family are not named in the release-notes entry that dates it
+      'gemini-1.5-pro-001', 'gemini-1.5-pro-002', 'gemini-1.5-flash-002', 'gemini-1.5-flash-latest', 'gemini-1.5-flash-8b-001',
     ]) {
       expect(byId(id), id).toBeUndefined();
     }
@@ -132,6 +135,24 @@ describe('Google Gemini nodes', () => {
 
   it('reports nothing for models with no shutdown date, or for Vertex AI', () => {
     for (const node of ['Flash 2.5 (no shutdown date)', 'Flash 3 preview (replacement listed, no date)', 'Vertex AI model']) expect(byNode(result, node), node).toEqual([]);
+  });
+
+  it('reports the Gemini 1.5 family as shut down, dated to the release-notes entry and marked unverified', () => {
+    const [finding] = byNode(result, 'Gemini 1.5 Flash');
+    expect(finding).toMatchObject({
+      model: 'gemini-1.5-flash',
+      severity: 'breaking',
+      date: '2025-09-29',
+      status: 'past',
+      countsTowardExit: true,
+      replacement: 'None listed by Google',
+      verification: 'unverified',
+      sources: [CHANGELOG],
+    });
+    expect(finding!.verificationNote).toContain('date of the notice');
+    expect(finding!.message).toBe('Google has shut down Gemini API model "gemini-1.5-flash"; API calls fail.');
+    // 1.5 names the entry does not list (versions, -latest) are not matched
+    expect(byNode(result, 'Gemini 1.5 Pro 002 (version name, not in the dated entry)')).toEqual([]);
   });
 });
 

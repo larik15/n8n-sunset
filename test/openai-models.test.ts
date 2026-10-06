@@ -13,6 +13,22 @@ describe('matchModelId', () => {
     expect(matchModelId('o4-mini', index)).toMatchObject({ kind: 'alias', entry: { id: 'o4-mini-2025-04-16' } });
   });
 
+  it('matches the models announced on 2026-10-01 (GPT-5.x and text-to-speech)', () => {
+    expect(matchModelId('gpt-5.1', index)).toMatchObject({ kind: 'exact', entry: { shutdownDate: '2027-04-01', replacement: 'gpt-6-sol', announcement: '2026-10-01: GPT-5.3-Codex, GPT-5.1, GPT-5.4-Nano' } });
+    expect(matchModelId('gpt-5.3-codex', index)).toMatchObject({ entry: { shutdownDate: '2027-04-01', replacement: 'gpt-6-sol' } });
+    expect(matchModelId('gpt-5.4-nano', index)).toMatchObject({ entry: { shutdownDate: '2027-04-01', replacement: 'gpt-6-luna' } });
+    for (const id of ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts-2025-03-20', 'gpt-4o-mini-tts-2025-12-15']) {
+      expect(matchModelId(id, index), id).toMatchObject({ kind: 'exact', entry: { shutdownDate: '2027-01-06', replacement: 'gpt-realtime-2.1-mini', announcement: '2026-10-01: Text-to-speech models' } });
+    }
+  });
+
+  it('does not match neighbours of those models that the page does not list', () => {
+    // The page names exact IDs: not the undated gpt-4o-mini-tts alias, a dated gpt-5.1 snapshot, or other GPT-5.x models.
+    for (const id of ['gpt-4o-mini-tts', 'gpt-5.1-2025-11-13', 'gpt-5.2', 'gpt-5.4-mini', 'gpt-5.4', 'tts-2', 'tts-1-1106']) {
+      expect(matchModelId(id, index), id).toBeUndefined();
+    }
+  });
+
   it('does not match models that are not listed', () => {
     for (const id of ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-5', 'o3', 'gpt-5.6-sol', 'GPT-4']) {
       expect(matchModelId(id, index), id).toBeUndefined();
@@ -186,8 +202,9 @@ describe('shutdown day itself', () => {
     expect(result.findings[0]!.message).toContain('has shut down');
   });
 
-  it('pins the as-of date used by the other tests to the day the OpenAI data was collected', () => {
-    expect(AS_OF).toBe(registry.sources['openai-deprecations']!.accessed);
+  it('pins the as-of date used by the other tests to a day the registry data already covers', () => {
+    expect(AS_OF).toBe('2026-10-01');
+    expect(registry.sources['openai-deprecations']!.accessed >= AS_OF).toBe(true);
     expect(registry.registryVersion >= AS_OF).toBe(true);
   });
 });

@@ -63,7 +63,7 @@
       "title": "OpenAI API deprecations",
       "url": "https://developers.openai.com/api/docs/deprecations",
       "previousUrl": "https://platform.openai.com/docs/deprecations",
-      "accessed": "2026-10-01"
+      "accessed": "2026-10-06"
     },
     "openai-openapi": {
       "title": "OpenAI OpenAPI spec (endpoint paths; /assistants and /threads are tagged \"Assistants\")",
@@ -732,6 +732,55 @@
     "endpointMatching": "Endpoints match by URL path (and every path below it, unless exactPath is set): in HTTP Request nodes, only in the url field, when it is on api.openai.com or the node uses OpenAI credentials with an expression URL; in Code nodes that mention api.openai.com, only inside api.openai.com URLs or string literals that start with the path. Header entries match an OpenAI-Beta header with that value. Entries with a method only apply to that HTTP method. objectIdPrefix entries match a quoted object ID with that prefix (for example \"pmpt_...\") in request bodies and code. nodeUsages list n8n nodes that call the endpoint themselves: a node of that type, within minTypeVersion and maxTypeVersion when set (a missing typeVersion counts as 1), with the parameter set to the value when one is given (parameterDefault when the export omits it), and the requires path non-empty when set. The operation is read from operationParameter (default \"operation\"), falling back to defaultOperation because n8n omits defaults from exports; operations not listed do not match.",
     "excluded": "Left out because they are not endpoints a workflow calls: Agent Builder (a dashboard product), the 2024 restriction on new fine-tuning training for babbage-002 and davinci-002, and the 2026-05-07 and 2026-07-02 fine-tuning restrictions that only apply to some organizations (noted on the fine-tuning job creation entry).",
     "models": [
+      {
+        "id": "gpt-5.3-codex",
+        "shutdownDate": "2027-04-01",
+        "replacement": "gpt-6-sol",
+        "announcement": "2026-10-01: GPT-5.3-Codex, GPT-5.1, GPT-5.4-Nano",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.4-nano",
+        "shutdownDate": "2027-04-01",
+        "replacement": "gpt-6-luna",
+        "announcement": "2026-10-01: GPT-5.3-Codex, GPT-5.1, GPT-5.4-Nano",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-5.1",
+        "shutdownDate": "2027-04-01",
+        "replacement": "gpt-6-sol",
+        "announcement": "2026-10-01: GPT-5.3-Codex, GPT-5.1, GPT-5.4-Nano",
+        "verification": "verified"
+      },
+      {
+        "id": "tts-1",
+        "shutdownDate": "2027-01-06",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-10-01: Text-to-speech models",
+        "verification": "verified"
+      },
+      {
+        "id": "tts-1-hd",
+        "shutdownDate": "2027-01-06",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-10-01: Text-to-speech models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-tts-2025-03-20",
+        "shutdownDate": "2027-01-06",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-10-01: Text-to-speech models",
+        "verification": "verified"
+      },
+      {
+        "id": "gpt-4o-mini-tts-2025-12-15",
+        "shutdownDate": "2027-01-06",
+        "replacement": "gpt-realtime-2.1-mini",
+        "announcement": "2026-10-01: Text-to-speech models",
+        "verification": "verified"
+      },
       {
         "id": "gpt-5.4-cyber",
         "shutdownDate": "2026-10-01",
@@ -2233,8 +2282,8 @@
   },
   "gemini": {
     "source": "gemini-deprecations",
-    "matching": "Model IDs match exactly, with or without the \"models/\" prefix and a trailing \":generateContent\"-style method. Only models with a shutdown date are listed: the deprecations table, plus dated announcements that only the release notes carry. Google states that the table dates are the earliest possible shutdown dates and that it confirms the exact date to users in advance.",
-    "excluded": "Left out: rows that say \"No shutdown date announced\" (including gemini-3-flash-preview, which has a replacement but no date); the managed agent antigravity-preview-05-2026 (an agent, not a model ID); the Gemini 1.5 models and others the release notes only report as \"now shut down\" without an earlier dated announcement; gemini-omni-flash-preview, which the release notes say will be deprecated (not shut down) on 2026-09-30; Vertex AI model IDs, which have their own lifecycle.",
+    "matching": "Model IDs match exactly, with or without the \"models/\" prefix and a trailing \":generateContent\"-style method. Only models with a shutdown date are listed: the deprecations table, plus dated announcements that only the release notes carry, plus the three Gemini 1.5 models the release notes of 2025-09-29 report as shut down (their date is the date of that notice, so they are marked unverified). Google states that the table dates are the earliest possible shutdown dates and that it confirms the exact date to users in advance.",
+    "excluded": "Left out: rows that say \"No shutdown date announced\" (including gemini-3-flash-preview, which has a replacement but no date); the managed agent antigravity-preview-05-2026 (an agent, not a model ID); versioned and alias names of the 1.5 family (gemini-1.5-pro-001, gemini-1.5-pro-002, gemini-1.5-flash-001, gemini-1.5-flash-002, gemini-1.5-flash-8b-001, the -latest names), because the cited release-notes entry names only gemini-1.5-pro, gemini-1.5-flash-8b and gemini-1.5-flash; Gemini 1.0 models and other models the release notes only mention as removed or no longer supported; gemini-omni-flash-preview, which the release notes say will be deprecated (not shut down) on 2026-09-30; Vertex AI model IDs, which have their own lifecycle.",
     "models": [
       {
         "id": "gemini-3.1-flash-lite",
@@ -2772,6 +2821,39 @@
         "replacement": null,
         "announcement": "2025-11-04: release notes",
         "verification": "verified",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-pro",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "announcement": "2025-09-29: release notes (\"now shut down\")",
+        "verification": "unverified",
+        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-flash-8b",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "announcement": "2025-09-29: release notes (\"now shut down\")",
+        "verification": "unverified",
+        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-flash",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "announcement": "2025-09-29: release notes (\"now shut down\")",
+        "verification": "unverified",
+        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
         "sources": [
           "gemini-changelog"
         ]

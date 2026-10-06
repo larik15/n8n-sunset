@@ -7,7 +7,7 @@ All notable changes to n8n-sunset. The format follows [Keep a Changelog](https:/
 ### Added
 
 - **Anthropic model retirement checks** (`anthropic/model-retirement`, category `anthropic-model`). All 20 models that Anthropic's [model deprecations page](https://platform.claude.com/docs/en/about-claude/model-deprecations) lists with a retirement date, plus the documented alias `claude-sonnet-4-5`, each with Anthropic's recommended replacement. Detected in the Anthropic Chat Model and Anthropic nodes (and so in AI Agent and chain model sub-nodes), in HTTP Request nodes calling `api.anthropic.com` (URL, JSON body, and body or query parameters), in Code nodes, and in `model` fields of other nodes (unverified warnings).
-- **Google Gemini model shutdown checks** (`gemini/model-shutdown`, category `gemini-model`). All 54 models with a shutdown date on Google's [Gemini API deprecations page](https://ai.google.dev/gemini-api/docs/deprecations) or announced with a date in the [release notes](https://ai.google.dev/gemini-api/docs/changelog). Detected in the Google Gemini Chat Model, Google Gemini, and Embeddings Google Gemini nodes, in HTTP Request nodes calling `generativelanguage.googleapis.com` (model in the URL path or the body), in Code nodes, and in `model` fields of other nodes. `models/gemini-...` names and `:generateContent`-style suffixes are understood, and the finding names the bare model ID.
+- **Google Gemini model shutdown checks** (`gemini/model-shutdown`, category `gemini-model`). All 57 models with a shutdown date on Google's [Gemini API deprecations page](https://ai.google.dev/gemini-api/docs/deprecations) or announced with a date in the [release notes](https://ai.google.dev/gemini-api/docs/changelog), including the Gemini 1.5 models the release notes of 2025-09-29 report as shut down (marked unverified, because that date is the date of the notice). Detected in the Google Gemini Chat Model, Google Gemini, and Embeddings Google Gemini nodes, in HTTP Request nodes calling `generativelanguage.googleapis.com` (model in the URL path or the body), in Code nodes, and in `model` fields of other nodes. `models/gemini-...` names and `:generateContent`-style suffixes are understood, and the finding names the bare model ID.
 - Registry sections `anthropic` and `gemini`. Each entry records the model ID, the announced date, the replacement, where it was announced, and its source; `matching` and `excluded` explain what is and isn't listed. Four new sources are cited with their access date (2026-10-06).
 - Exported `buildProviderIndex`, `matchProviderModel`, and the `ProviderModel` and `ProviderModels` types.
 - The example workflows and the README now show Anthropic and Gemini findings.
@@ -17,12 +17,12 @@ All notable changes to n8n-sunset. The format follows [Keep a Changelog](https:/
 - Exit code 1 now also covers breaking Anthropic and Gemini findings that take effect within the window or already have, with the same rules as OpenAI (disabled nodes never count; warnings never fail the run).
 - Findings for dates that are still ahead on the Gemini API say that Google lists them as the earliest possible shutdown dates.
 - The report footer names the source of each provider's dates.
-- Registry version 2026-10-06. The OpenAI entries were not re-checked for this release and are still as of 2026-10-01.
+- Registry version 2026-10-06. The OpenAI entries were re-checked against the current deprecations page: no date or replacement changed, and 7 models announced on 2026-10-01 were added (`gpt-5.3-codex`, `gpt-5.4-nano` and `gpt-5.1` on 2027-04-01; `tts-1`, `tts-1-hd` and the two `gpt-4o-mini-tts` snapshots on 2027-01-06). The OpenAI page lists `gpt-4-1106-preview` under two dates (2026-03-26 and 2026-10-23); the registry keeps the earlier one and still marks it unverified.
 - Registry files written for 0.1.x, without `anthropic` or `gemini` sections, still load (those sections are empty).
 
 ### Not included
 
-- Anthropic's `-latest` and `-0` aliases (for example `claude-3-5-haiku-latest`) and Gemini 1.5 and 1.0 models, because no official page lists them with a date.
+- Anthropic's `-latest` and `-0` aliases (for example `claude-3-5-haiku-latest`) and Gemini 1.0 models, because no official page lists them with a date. The versioned and alias names of Gemini 1.5 (`gemini-1.5-pro-002`, `gemini-1.5-flash-latest`, ...) are not named in the release-notes entry that dates the family.
 - Claude on Amazon Bedrock and Google Vertex AI, and Gemini on Vertex AI, which follow their own schedules.
 
 ## [0.1.0] - 2026-10-02
