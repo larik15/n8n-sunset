@@ -3,3 +3,25 @@
 /coverage/
 *.log
 .DS_Store
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+creds.json
+
+# Database dumps and backups
+*.dump
+*.sqlite
+*.sqlite3
+*.sqlite.gz
+
+# Local review material
+/REVIEW_BUNDLE.md
