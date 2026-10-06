@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { isIsoDay } from '../src/dates.js';
 import { validateRegistry } from '../src/registry.js';
 import { DETECTORS } from '../src/rules/n8n.js';
+import { daysBetween } from '../src/dates.js';
+import { buildModelIndex, matchModelId, openAiLookup } from '../src/rules/openai.js';
+import { buildProviderIndex, matchProviderModel, providerLookup } from '../src/rules/providers.js';
+import { resolveSuccessors, type ReplacementLookup } from '../src/rules/replacements.js';
 import { registry } from './helpers.js';
 
 const SEVERITIES = ['breaking', 'behavior-change', 'info'];
@@ -221,5 +225,75 @@ describe('validateRegistry', () => {
     const badVersion = copy();
     badVersion.registryVersion = 'October';
     expect(() => validateRegistry(badVersion)).toThrow('invalid registryVersion');
+  });
+});
+
+describe('replacement chains', () => {
+  const openai = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
+  const anthropic = buildProviderIndex('anthropic', registry.anthropic.models);
+  const gemini = buildProviderIndex('gemini', registry.gemini.models);
+  const asOf = registry.registryVersion;
+  const sections: [string, { id: string; replacement: string | null }[], ReplacementLookup][] = [
+    ['openai', registry.openai.models, openAiLookup(openai)],
+    ['anthropic', registry.anthropic.models, providerLookup(anthropic)],
+    ['gemini', registry.gemini.models, providerLookup(gemini)],
+  ];
+
+  it('never ends a suggestion at a model that is gone or goes within 30 days of the registry date', () => {
+    for (const [name, models, lookup] of sections) {
+      for (const m of models) {
+        if (!m.replacement) continue;
+        const named = [...new Set(m.replacement.match(/[A-Za-z0-9][A-Za-z0-9._:-]*[A-Za-z0-9]/g) ?? [])].filter((t) => lookup(t));
+        for (const id of named) {
+          for (const next of resolveSuccessors(id, lookup, asOf, 30)) {
+            const info = lookup(next);
+            expect(info === undefined || daysBetween(asOf, info.shutdownDate) > 30, `${name} ${m.id} -> ${id} -> ${next}`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it('follows the chains the review found', () => {
+    const g = providerLookup(gemini);
+    expect(resolveSuccessors('gemini-3.1-flash-image-preview', g, asOf, 30)).toEqual(['gemini-3.1-flash-image']);
+    expect(resolveSuccessors('veo-3.1-generate-preview', g, asOf, 30)).toEqual(['gemini-omni-1.1-flash']);
+    expect(resolveSuccessors('gemini-robotics-er-1.6-preview', g, asOf, 30)).toEqual(['gemini-robotics-er-2-preview']);
+  });
+});
+
+describe('model defaults', () => {
+  const openai = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
+  const anthropic = buildProviderIndex('anthropic', registry.anthropic.models);
+  const gemini = buildProviderIndex('gemini', registry.gemini.models);
+
+  it('names a listed model, a node type, a version range, and an n8n source pinned to a commit for every rule', () => {
+    expect(registry.modelDefaults.map((d) => d.id)).toEqual([
+      'anthropic-chat-model-v1', 'anthropic-chat-model-v1.1', 'anthropic-chat-model-v1.2', 'anthropic-chat-model-v1.3',
+      'openai-audio-generate', 'openai-audio-transcribe', 'openai-audio-translate', 'gemini-image-generate',
+    ]);
+    for (const d of registry.modelDefaults) {
+      const match = d.provider === 'openai' ? matchModelId(d.model, openai) : matchProviderModel(d.model, d.provider === 'anthropic' ? anthropic : gemini);
+      expect(match, d.id).toBeDefined();
+      expect(d.nodeType, d.id).toMatch(/^@n8n\/n8n-nodes-langchain\.[A-Za-z]+$/);
+      expect(d.minTypeVersion <= d.maxTypeVersion, d.id).toBe(true);
+      expect(d.fixed === true || typeof d.parameter === 'string', d.id).toBe(true);
+      for (const ref of d.sources) expect(registry.sources[ref]!.url, d.id).toMatch(/^https:\/\/github\.com\/n8n-io\/n8n\/(tree|blob)\/a9c858b4d95f8e09b1f26b608374f211148a2cc4\//);
+    }
+  });
+
+  it('rejects an incomplete rule and loads registries without the table', () => {
+    const copy = JSON.parse(JSON.stringify(registry)) as typeof registry;
+    copy.modelDefaults[0]!.model = '';
+    expect(() => validateRegistry(copy)).toThrow('modelDefaults entry "anthropic-chat-model-v1" is incomplete');
+    const old = JSON.parse(JSON.stringify(registry)) as Record<string, unknown>;
+    delete old.modelDefaults;
+    expect(validateRegistry(old as never).modelDefaults).toEqual([]);
+  });
+
+  it('rejects an unknown dateStatus', () => {
+    const copy = JSON.parse(JSON.stringify(registry)) as typeof registry;
+    (copy.gemini.models[0] as { dateStatus: string }).dateStatus = 'maybe';
+    expect(() => validateRegistry(copy)).toThrow('invalid dateStatus "maybe"');
   });
 });

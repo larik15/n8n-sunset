@@ -14,7 +14,7 @@ describe('Anthropic registry data', () => {
   const byId = (id: string) => models.find((m) => m.id === id);
 
   it('records every model with an announced retirement date, its replacement and its source', () => {
-    expect(models).toHaveLength(20);
+    expect(models).toHaveLength(22);
     expect(byId('claude-sonnet-4-5-20250929')).toMatchObject({
       shutdownDate: '2026-11-30',
       replacement: 'claude-sonnet-5-5',
@@ -35,11 +35,24 @@ describe('Anthropic registry data', () => {
     }
   });
 
-  it('documents the one alias it lists and cites the page that documents it', () => {
+  it('lists the documented alias and the aliases the model-IDs rule implies, each with a note and the page as source', () => {
     const withAliases = models.filter((m) => m.aliases?.length);
-    expect(withAliases.map((m) => [m.id, m.aliases])).toEqual([['claude-sonnet-4-5-20250929', ['claude-sonnet-4-5']]]);
-    expect(withAliases[0]!.aliasSources).toEqual(['anthropic-model-ids']);
+    expect(withAliases.map((m) => [m.id, m.aliases])).toEqual([
+      ['claude-sonnet-4-5-20250929', ['claude-sonnet-4-5']],
+      ['claude-opus-4-1-20250805', ['claude-opus-4-1']],
+      ['claude-sonnet-4-20250514', ['claude-sonnet-4-0']],
+      ['claude-opus-4-20250514', ['claude-opus-4-0']],
+    ]);
+    for (const m of withAliases) {
+      expect(m.aliasSources, m.id).toEqual(['anthropic-model-ids']);
+      expect(m.aliasNote, m.id).toContain('assumes it retires with its snapshot');
+    }
     expect(registry.sources['anthropic-model-ids']!.url).toBe(MODEL_IDS);
+  });
+
+  it("adds n8n's own option values claude-2 and claude-instant-1, citing n8n's source, as unverified", () => {
+    expect(byId('claude-2')).toMatchObject({ shutdownDate: '2025-07-21', replacement: 'claude-opus-4-8', verification: 'unverified', sources: ['anthropic-deprecations', 'n8n-lmchat-anthropic'] });
+    expect(byId('claude-instant-1')).toMatchObject({ shutdownDate: '2024-11-06', replacement: 'claude-haiku-4-5-20251001', verification: 'unverified' });
   });
 });
 
@@ -54,7 +67,7 @@ describe('matchProviderModel (Anthropic)', () => {
   it('does not match current models, near misses, other casing, or Bedrock and Vertex names', () => {
     for (const id of [
       'claude-sonnet-5-5', 'claude-opus-4-8', 'claude-haiku-4-5-20251001', 'claude-3-5-sonnet', 'claude-3-5-sonnet-20241023',
-      'Claude-2.1', 'claude-2', 'anthropic.claude-3-5-sonnet-20240620-v1:0', 'claude-3-5-sonnet@20240620', 'anthropic/claude-2.1',
+      'Claude-2.1', 'claude-2-1', 'claude-3-5-haiku-latest', 'anthropic.claude-3-5-sonnet-20240620-v1:0', 'claude-3-5-sonnet@20240620', 'anthropic/claude-2.1',
     ]) {
       expect(matchProviderModel(id, index), id).toBeUndefined();
     }
@@ -108,6 +121,9 @@ describe('Anthropic chat model nodes', () => {
     const [alias] = byNode(result, 'Sonnet 4.5 alias');
     expect(alias).toMatchObject({ model: 'claude-sonnet-4-5', date: '2026-11-30', sources: [DEPRECATIONS, MODEL_IDS] });
     expect(alias!.message).toBe('Anthropic retires model "claude-sonnet-4-5" (alias of claude-sonnet-4-5-20250929); API calls will fail.');
+    // No page says when an alias stops working.
+    expect(alias).toMatchObject({ verification: 'unverified' });
+    expect(alias!.verificationNote).toContain('does not say when an alias stops working');
   });
 
   it('finds the retired model inside an expression and ignores the current one in it', () => {
@@ -122,10 +138,9 @@ describe('Anthropic chat model nodes', () => {
     expect(findings[0]).toMatchObject({ model: 'claude-3-haiku-20240307', locations: ['Anthropic node parameter: modelId.value'] });
   });
 
-  it('downgrades a node behind another base URL to an unverified warning', () => {
-    const [finding] = byNode(result, 'Behind a gateway');
-    expect(finding).toMatchObject({ severity: 'warning', verification: 'unverified', countsTowardExit: false, model: 'claude-2.1' });
-    expect(finding!.verificationNote).toContain('gateway.example.com');
+  it('ignores an options.baseURL on the Anthropic Chat Model, which takes its endpoint from the credential', () => {
+    // The real gateway setting is the credential's "url", which is not in the workflow JSON (a documented limitation).
+    expect(byNode(result, 'Behind a gateway')[0]).toMatchObject({ severity: 'breaking', verification: 'verified', model: 'claude-2.1' });
   });
 
   it('does not count a disabled node toward the exit code', () => {
@@ -214,5 +229,59 @@ describe('Anthropic findings in the CLI', () => {
     const only = { ...workflows[0]!, nodes: workflows[0]!.nodes.filter((n) => n.name === 'Sonnet 4.5 dated') };
     const result = scanWorkflows([only], registry, { asOf: PROVIDERS_AS_OF, windowDays: 30 });
     expect(result.summary).toMatchObject({ breaking: 1, upcoming: 1, exitFindings: 0 });
+  });
+});
+
+describe('Anthropic review fixes', () => {
+  const result = scan('rules/anthropic-review-fixes.json');
+  const LMCHAT = 'https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/llms/LMChatAnthropic/LmChatAnthropic.node.ts';
+
+  it('flags the model an untouched Anthropic Chat Model uses by default, per node version, as unverified', () => {
+    const [v13] = byNode(result, 'Untouched Chat Model 1.3');
+    expect(v13).toMatchObject({
+      model: 'claude-sonnet-4-5-20250929',
+      date: '2026-11-30',
+      status: 'upcoming',
+      verification: 'unverified',
+      locations: ['Anthropic Chat Model 1.3: model not set, n8n default claude-sonnet-4-5-20250929'],
+    });
+    expect(v13!.sources).toContain(LMCHAT);
+    expect(v13!.verificationNote).toContain('leaves "model" unset');
+    expect(byNode(result, 'Untouched Chat Model 1')[0]).toMatchObject({ model: 'claude-2', status: 'past', countsTowardExit: true });
+    expect(byNode(result, 'Untouched Chat Model 1.1')[0]).toMatchObject({ model: 'claude-3-sonnet-20240229', status: 'past' });
+    expect(byNode(result, 'Untouched Chat Model 1.2')[0]).toMatchObject({ model: 'claude-3-5-sonnet-20240620', status: 'past' });
+    // 1.4 defaults to claude-sonnet-4-6, which has no announced date
+    expect(byNode(result, 'Untouched Chat Model 1.4')).toEqual([]);
+  });
+
+  it("matches n8n's option value claude-instant-1", () => {
+    expect(byNode(result, 'Claude Instant 1 option')[0]).toMatchObject({ model: 'claude-instant-1', date: '2024-11-06', verification: 'unverified' });
+  });
+
+  it('matches the aliases the model-IDs rule implies, in HTTP bodies and code, as unverified', () => {
+    const [opus] = byNode(result, 'Opus 4.1 alias in an HTTP body');
+    expect(opus).toMatchObject({ model: 'claude-opus-4-1', date: '2026-08-05', severity: 'breaking', verification: 'unverified', sources: [DEPRECATIONS, MODEL_IDS] });
+    expect(opus!.message).toContain('(alias of claude-opus-4-1-20250805)');
+    expect(byNode(result, 'Sonnet 4.0 alias in code')[0]).toMatchObject({ model: 'claude-sonnet-4-0', date: '2026-06-15' });
+  });
+
+  it('downgrades code that calls Claude on Vertex AI or Bedrock to a warning', () => {
+    const [finding] = byNode(result, 'Code calling Claude on Vertex AI');
+    expect(finding).toMatchObject({ model: 'claude-3-7-sonnet-20250219', severity: 'warning', countsTowardExit: false });
+    expect(finding!.verificationNote).toContain('Amazon Bedrock or Google Cloud Vertex AI');
+  });
+
+  it('reports one finding, under the model ID, when a node names a model and its alias', () => {
+    const findings = byNode(result, 'Alias and its model in one node');
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({ model: 'claude-opus-4-1-20250805', verification: 'verified' });
+  });
+
+  it('treats an OpenAI-compatible node pointed at api.anthropic.com as calling Anthropic', () => {
+    expect(byNode(result, 'OpenAI Chat Model pointed at Anthropic')[0]).toMatchObject({ model: 'claude-3-haiku-20240307', severity: 'breaking', countsTowardExit: true });
+  });
+
+  it('ignores model IDs in Python comments', () => {
+    expect(byNode(result, 'Old ID only in a Python comment')).toEqual([]);
   });
 });

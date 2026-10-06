@@ -165,10 +165,11 @@ describe('matching edge cases', () => {
     expect(byNode(result, 'Fine-tuned 4o mini')).toEqual([]);
   });
 
-  it('marks models with conflicting dates on the official page as unverified, using the earliest date', () => {
+  it('marks models with conflicting dates on the official page as unverified, using the newer announcement', () => {
     const [finding] = byNode(result, 'Conflicting dates');
-    expect(finding).toMatchObject({ model: 'gpt-4-1106-preview', date: '2026-03-26', verification: 'unverified' });
-    expect(finding!.verificationNote).toContain('2026-10-23');
+    expect(finding).toMatchObject({ model: 'gpt-4-1106-preview', date: '2026-10-23', verification: 'unverified', replacement: 'gpt-5.6-sol' });
+    expect(finding!.verificationNote).toContain('March 26, 2026');
+    expect(finding!.verificationNote).toContain('newer announcement is used');
   });
 });
 
@@ -320,5 +321,52 @@ describe('legacy fine-tunes with a custom suffix', () => {
       'https://developers.openai.com/api/docs/deprecations',
       'https://github.com/openai/openai-python/blob/f7ccce126325ea35b6e5224ab954652c97a74896/openai/cli.py',
     ]);
+  });
+});
+
+describe('OpenAI node defaults and fixed models', () => {
+  const result = scanFixture('rules/openai-review-fixes.json', { asOf: '2026-10-06' });
+  const AUDIO = 'https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi';
+  const TTS_NOTE = "gpt-realtime-2.1-mini (OpenAI's replacement; this node only offers tts-1 and tts-1-hd, so call the Realtime API with an HTTP Request node)";
+
+  it('flags text to speech left at its default model, with a replacement that says the node cannot use it', () => {
+    const [finding] = byNode(result, 'Text to speech (untouched)');
+    expect(finding).toMatchObject({
+      model: 'tts-1',
+      date: '2027-01-06',
+      severity: 'breaking',
+      verification: 'unverified',
+      replacement: TTS_NOTE,
+      locations: ['OpenAI node: resource=audio, operation=generate: model not set, n8n default tts-1'],
+    });
+    expect(finding!.sources).toEqual(['https://developers.openai.com/api/docs/deprecations', AUDIO]);
+  });
+
+  it('uses the same node-specific replacement when the model is set', () => {
+    expect(byNode(result, 'Text to speech HD (set)')[0]).toMatchObject({ model: 'tts-1-hd', verification: 'verified', replacement: TTS_NOTE });
+  });
+
+  it('flags Transcribe and Translate, which always use whisper-1', () => {
+    for (const node of ['Transcribe a recording', 'Translate a recording']) {
+      const [finding] = byNode(result, node);
+      expect(finding, node).toMatchObject({ model: 'whisper-1', date: '2027-02-26', severity: 'breaking', verification: 'unverified' });
+      expect(finding!.replacement, node).toContain('this node always uses whisper-1, so call the API with an HTTP Request node');
+      expect(finding!.locations![0], node).toContain('(always uses whisper-1)');
+    }
+  });
+
+  it('does not assume a default for other resources or for node versions it has not checked', () => {
+    expect(byNode(result, 'Text resource (no audio default)')).toEqual([]);
+    expect(byNode(result, 'Transcribe on a future node version')).toEqual([]);
+  });
+
+  it('notes when the listed replacement is itself going away', () => {
+    expect(byNode(result, 'DALL-E 3 image')[0]!.replacement).toBe(
+      'gpt-image-2, gpt-image-1 (itself shuts down on 2026-10-23; next: gpt-image-2.5-sunburst or gpt-image-2.5-flare), or gpt-image-1-mini',
+    );
+  });
+
+  it('ignores model IDs in code comments', () => {
+    expect(byNode(result, 'Old ID only in a comment')).toEqual([]);
   });
 });

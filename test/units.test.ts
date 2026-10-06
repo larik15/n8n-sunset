@@ -1,3 +1,5 @@
+import { stripComments } from '../src/rules/code.js';
+import { annotateReplacement } from '../src/rules/replacements.js';
 import { describe, expect, it } from 'vitest';
 import { colorEnabled } from '../src/cli.js';
 import { daysBetween, isIsoDay, utcToday } from '../src/dates.js';
@@ -133,5 +135,56 @@ describe('apiBase', () => {
       expect(apiBase(input).href, input).toBe('https://n8n.example.com/api/v1');
     }
     expect(apiBase('https://example.com/n8n//api/v1/').pathname).toBe('/n8n/api/v1');
+  });
+});
+
+describe('stripComments', () => {
+  it('removes JavaScript line and block comments but keeps strings, template literals and line breaks', () => {
+    const js = "const a = 'x // not a comment'; // gone\nconst b = \"/* kept */\"; /* gone\n too */ const c = `a // b`;";
+    const out = stripComments(js, 'javascript');
+    expect(out).toContain("'x // not a comment'");
+    expect(out).toContain('"/* kept */"');
+    expect(out).toContain('`a // b`');
+    expect(out).not.toContain('gone');
+    expect(out.split('\n')).toHaveLength(js.split('\n').length);
+  });
+
+  it('removes Python comments but keeps # inside strings, including triple-quoted ones', () => {
+    const py = "a = 'x # kept'  # gone\nb = \"\"\"doc # kept too\"\"\"\n# gone as well\nc = 1";
+    const out = stripComments(py, 'python');
+    expect(out).toContain("'x # kept'");
+    expect(out).toContain('doc # kept too');
+    expect(out).not.toContain('gone');
+  });
+
+  it('copes with escaped quotes and unterminated strings', () => {
+    expect(stripComments("const s = 'it\\'s'; // x", 'javascript')).toBe("const s = 'it\\'s'; ");
+    expect(stripComments("const s = 'open\n// c", 'javascript')).toBe("const s = 'open\n");
+  });
+});
+
+describe('annotateReplacement', () => {
+  const lookup = (id: string) =>
+    ({
+      'old-model-1': { shutdownDate: '2026-06-01', replacement: 'mid-model-2' },
+      'mid-model-2': { shutdownDate: '2026-10-20', replacement: 'new-model-3 or new-model-4' },
+      'later-model-5': { shutdownDate: '2027-06-01', replacement: null },
+      'tentative-model-6': { shutdownDate: '2026-09-01', replacement: 'new-model-3', tentative: true },
+    })[id];
+
+  it('leaves live replacements alone', () => {
+    expect(annotateReplacement('later-model-5', lookup, '2026-10-06', 30)).toBe('later-model-5');
+    expect(annotateReplacement('unknown-model-9', lookup, '2026-10-06', 30)).toBe('unknown-model-9');
+  });
+
+  it('notes a dead or soon-dead replacement and follows the chain', () => {
+    expect(annotateReplacement('old-model-1', lookup, '2026-10-06', 30)).toBe('old-model-1 (itself shut down on 2026-06-01; next: new-model-3 or new-model-4)');
+    expect(annotateReplacement('mid-model-2', lookup, '2026-10-06', 30)).toBe('mid-model-2 (itself shuts down on 2026-10-20; next: new-model-3 or new-model-4)');
+    expect(annotateReplacement('mid-model-2', lookup, '2026-10-06', 7)).toBe('mid-model-2');
+  });
+
+  it('words tentative dates as earliest dates and does not touch longer IDs that contain the name', () => {
+    expect(annotateReplacement('tentative-model-6', lookup, '2026-10-06', 30)).toBe('tentative-model-6 (itself past its earliest shutdown date, 2026-09-01; next: new-model-3)');
+    expect(annotateReplacement('old-model-1-mini, or old-model-1', lookup, '2026-10-06', 30)).toBe('old-model-1-mini, or old-model-1 (itself shut down on 2026-06-01; next: new-model-3 or new-model-4)');
   });
 });

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { loadWorkflowsFromApi } from './api.js';
 import { daysBetween, isIsoDay, utcToday } from './dates.js';
-import { loadRegistry, type Registry } from './registry.js';
+import { loadRegistry, missingProviderSections, type Registry } from './registry.js';
 import { makeColors, renderTable, toJsonReport } from './report.js';
 import { scanWorkflows } from './scan.js';
 import { loadWorkflows, type LoadResult } from './workflows.js';
@@ -15,7 +15,7 @@ export const EXIT_BREAKING = 1;
 export const EXIT_ERROR = 2;
 
 /** The registry is a snapshot of official pages; warn once it is this many days older than --as-of. */
-export const REGISTRY_WARN_AGE_DAYS = 30;
+export const REGISTRY_WARN_AGE_DAYS = 14;
 /** Default for --max-registry-age: older data fails the run (exit 2), since new shutdowns may be missing. */
 export const REGISTRY_MAX_AGE_DAYS = 90;
 
@@ -42,6 +42,8 @@ Options:
   --as-of <date>              Measure dates from this day, YYYY-MM-DD (default: today, UTC)
   --target <ver>              Also fail on breaking changes on upgrade to this n8n
                               version (3.0, or 3)
+  --skip-rule <id>            Leave out findings of this rule (e.g. gemini/model-shutdown)
+                              or category (e.g. gemini-model); repeat for more
   --allow-skipped             Don't exit 2 for files that aren't readable n8n workflows,
                               or for symbolic links (which are never followed)
   --max-registry-age <days>   Exit 2 when the bundled data is older than this many days
@@ -115,6 +117,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         days: { type: 'string', default: '30' },
         'as-of': { type: 'string' },
         target: { type: 'string', multiple: true },
+        'skip-rule': { type: 'string', multiple: true },
         'allow-skipped': { type: 'boolean', default: false },
         'from-api': { type: 'boolean', default: false },
         'max-registry-age': { type: 'string', default: String(REGISTRY_MAX_AGE_DAYS) },
@@ -157,6 +160,13 @@ export async function main(argv: string[], io: Io): Promise<number> {
   } catch (error) {
     return fail(message(error));
   }
+  const known = knownRules(registry);
+  const skipRules: string[] = [];
+  for (const raw of values['skip-rule'] ?? []) {
+    const rule = raw.trim();
+    if (!known.includes(rule)) return fail(`--skip-rule does not know "${raw}". Rule IDs and categories: ${known.join(', ')}`);
+    if (!skipRules.includes(rule)) skipRules.push(rule);
+  }
   const age = daysBetween(registry.registryVersion, asOf);
   const maxAge = Number(values['max-registry-age']);
   if (age > maxAge) {
@@ -187,10 +197,13 @@ export async function main(argv: string[], io: Io): Promise<number> {
   if (age > REGISTRY_WARN_AGE_DAYS) {
     warnings.push(`the bundled registry is from ${registry.registryVersion}, ${age} days before ${asOf}; newer shutdowns may be missing. Update n8n-sunset.`);
   }
+  for (const section of missingProviderSections(registry)) {
+    warnings.push(`the registry has no ${section} section (it was written for n8n-sunset 0.1), so ${section === 'anthropic' ? 'Anthropic' : 'Google Gemini'} models are not checked.`);
+  }
   for (const { file, message: text } of load.errors) warnings.push(`could not parse ${file}: ${text}`);
   for (const { file, reason } of load.skipped) warnings.push(`skipped ${file}: ${reason}`);
 
-  const result = scanWorkflows(load.workflows, registry, { asOf, windowDays: Number(values.days), targets });
+  const result = scanWorkflows(load.workflows, registry, { asOf, windowDays: Number(values.days), targets, skipRules });
   const failedFiles = load.errors.length + load.skipped.length;
   const exitCode =
     load.workflows.length === 0 || (failedFiles > 0 && !values['allow-skipped'])
@@ -214,6 +227,23 @@ export async function main(argv: string[], io: Io): Promise<number> {
     );
   }
   return exitCode;
+}
+
+/** Every value --skip-rule accepts: the rule IDs the registry can produce, and the finding categories. */
+export function knownRules(registry: Registry): string[] {
+  return [
+    'openai/model-shutdown',
+    'openai/endpoint-shutdown',
+    'anthropic/model-retirement',
+    'gemini/model-shutdown',
+    'n8n3/removed-node',
+    ...registry.n8n.changes.map((c) => `n8n3/${c.id}`),
+    'openai-model',
+    'openai-endpoint',
+    'anthropic-model',
+    'gemini-model',
+    'n8n-3.0',
+  ];
 }
 
 function isEntryPoint(): boolean {

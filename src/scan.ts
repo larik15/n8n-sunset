@@ -4,6 +4,7 @@ import type { Registry, Severity } from './registry.js';
 import { checkN8nNode } from './rules/n8n.js';
 import { buildModelIndex, checkOpenAiModels } from './rules/openai.js';
 import { checkOpenAiEndpoints } from './rules/openai-endpoints.js';
+import { checkModelDefaults, replacementOverride } from './rules/defaults.js';
 import { buildProviderIndex, checkProviderModels } from './rules/providers.js';
 import type { Workflow } from './workflows.js';
 
@@ -14,6 +15,8 @@ export interface ScanOptions {
   windowDays: number;
   /** n8n versions you plan to upgrade to (e.g. ["3.0"]): their breaking findings also set the exit code. */
   targets?: string[];
+  /** Rule IDs (e.g. "gemini/model-shutdown") or categories (e.g. "gemini-model") whose findings are left out. */
+  skipRules?: string[];
 }
 
 export interface ScanSummary {
@@ -73,17 +76,22 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
   const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
   const anthropic = buildProviderIndex('anthropic', registry.anthropic.models);
   const gemini = buildProviderIndex('gemini', registry.gemini.models);
+  const skip = new Set(options.skipRules ?? []);
+  const { windowDays } = options;
   const findings: Finding[] = [];
 
   for (const workflow of workflows) {
     for (const node of workflow.nodes) {
       const ruleFindings = [
         ...checkN8nNode(node, registry),
-        ...checkOpenAiModels(node, registry, index, options.asOf),
+        ...checkOpenAiModels(node, registry, index, options.asOf, windowDays),
         ...checkOpenAiEndpoints(node, registry, options.asOf),
-        ...checkProviderModels(node, registry, anthropic, options.asOf),
-        ...checkProviderModels(node, registry, gemini, options.asOf),
-      ];
+        ...checkProviderModels(node, registry, anthropic, options.asOf, windowDays),
+        ...checkProviderModels(node, registry, gemini, options.asOf, windowDays),
+        ...checkModelDefaults(node, registry, { openai: index, anthropic, gemini }, options.asOf, windowDays),
+      ].filter((f) => !skip.has(f.ruleId) && !skip.has(f.category));
+      const override = replacementOverride(registry, node);
+      if (override) for (const f of ruleFindings) if (f.category === override.category && f.model) f.replacement = override.text;
       for (const { trigger, ...f } of ruleFindings) {
         const daysUntil = trigger.kind === 'date' ? daysBetween(options.asOf, trigger.date) : null;
         const status: Status = trigger.kind === 'upgrade' ? 'on-upgrade' : daysUntil! <= 0 ? 'past' : 'upcoming';
@@ -123,6 +131,7 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
   return {
     ...options,
     targets,
+    skipRules: [...skip],
     findings,
     summary: {
       workflowsScanned: workflows.length,

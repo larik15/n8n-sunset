@@ -95,6 +95,21 @@
       "title": "Gemini API release notes (changelog)",
       "url": "https://ai.google.dev/gemini-api/docs/changelog",
       "accessed": "2026-10-06"
+    },
+    "n8n-lmchat-anthropic": {
+      "title": "n8n Anthropic Chat Model source at n8n@2.41.5 (model options, including \"LEGACY: Claude 2\" = claude-2 and \"Claude Instant 1\" = claude-instant-1, and the default model per node version)",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/llms/LMChatAnthropic/LmChatAnthropic.node.ts",
+      "accessed": "2026-10-06"
+    },
+    "n8n-openai-audio": {
+      "title": "n8n OpenAI node audio operations at n8n@2.41.5 (v1/actions/audio and v2/actions/audio: Generate defaults to tts-1 with only tts-1 and tts-1-hd selectable; Transcribe and Translate always use whisper-1)",
+      "url": "https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi",
+      "accessed": "2026-10-06"
+    },
+    "n8n-gemini-image": {
+      "title": "n8n Google Gemini node, Image > Generate at n8n@2.41.5 (from node version 1.2 the model defaults to models/gemini-3.1-flash-image-preview)",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/GoogleGemini/actions/image/generate.operation.ts",
+      "accessed": "2026-10-06"
     }
   },
   "n8n": {
@@ -990,11 +1005,11 @@
       },
       {
         "id": "gpt-4-1106-preview",
-        "shutdownDate": "2026-03-26",
-        "replacement": "gpt-5 or gpt-4.1*",
-        "announcement": "2025-09-26: Legacy GPT model snapshots (March 2026 shutdown)",
+        "shutdownDate": "2026-10-23",
+        "replacement": "gpt-5.6-sol",
+        "announcement": "2026-04-22: Legacy GPT model snapshots",
         "verification": "unverified",
-        "verificationNote": "The official page lists conflicting shutdown dates for this model (2026-03-26, 2026-10-23) under different announcements; the earliest is used."
+        "verificationNote": "The page lists this model twice: under the 2025-09-26 announcement (\"shut down on March 26, 2026\") and under the newer 2026-04-22 announcement (October 23, 2026). The newer announcement is used."
       },
       {
         "id": "gpt-4-turbo",
@@ -2069,8 +2084,8 @@
   },
   "anthropic": {
     "source": "anthropic-deprecations",
-    "matching": "Model IDs and the one documented alias (claude-sonnet-4-5) match exactly. Only models with an announced retirement date are listed: the \"Deprecation history\" tables of the deprecations page, which also give the recommended replacement. The status table is not used, because its \"Not sooner than ...\" dates for active models are earliest-possible floors, not announcements.",
-    "excluded": "Left out: claude-mythos-preview (deprecated 2026-06-09, retirement \"To be announced\"); active models with only a \"Not sooner than\" date (including claude-haiku-4-5-20251001); the -latest and -0 aliases of retired models (claude-3-5-haiku-latest, claude-3-7-sonnet-latest, claude-sonnet-4-0, claude-opus-4-0, claude-opus-4-1 and similar), because no official page lists them by name; Amazon Bedrock and Google Cloud Vertex AI model IDs, which follow their own retirement schedules; deprecated API parameters (temperature, top_p, top_k).",
+    "matching": "Model IDs match exactly, and so do the aliases listed with them: claude-sonnet-4-5 (named on the model-IDs page), claude-opus-4-1, claude-opus-4-0 and claude-sonnet-4-0 (derived from that page's rule that models before the 4.6 generation have a dateless alias per minor version), and n8n's own option values claude-2 and claude-instant-1. Alias matches are reported as unverified, because no page says when an alias stops working. Only models with an announced retirement date are listed: the \"Deprecation history\" tables, which also give the recommended replacement. The status table's \"Not sooner than ...\" dates for active models are floors, not announcements.",
+    "excluded": "Left out: claude-mythos-preview (deprecated 2026-06-09, retirement \"To be announced\"); active models with only a \"Not sooner than\" date (including claude-haiku-4-5-20251001); the -latest aliases of Claude 3.x models (claude-3-5-haiku-latest, claude-3-7-sonnet-latest and similar), which the model-IDs rule does not cover and no page lists; Amazon Bedrock and Google Cloud model IDs, which follow their own retirement schedules; deprecated API parameters (temperature, top_p, top_k) and manual thinking settings.",
     "models": [
       {
         "id": "claude-sonnet-4-5-20250929",
@@ -2086,7 +2101,8 @@
         ],
         "aliasSources": [
           "anthropic-model-ids"
-        ]
+        ],
+        "aliasNote": "Alias named on Anthropic's model-IDs page. The page says its stability guarantee covers model IDs, not these aliases, and does not say when an alias stops working; n8n-sunset assumes it retires with its snapshot."
       },
       {
         "id": "claude-opus-4-1-20250805",
@@ -2096,7 +2112,14 @@
         "verification": "verified",
         "sources": [
           "anthropic-deprecations"
-        ]
+        ],
+        "aliases": [
+          "claude-opus-4-1"
+        ],
+        "aliasSources": [
+          "anthropic-model-ids"
+        ],
+        "aliasNote": "Alias derived from the rule on Anthropic's model-IDs page (models before the 4.6 generation have a dateless alias per minor version that points to the latest snapshot); the page does not list it by name or say when an alias stops working. n8n-sunset assumes it retires with its snapshot."
       },
       {
         "id": "claude-sonnet-4-20250514",
@@ -2106,7 +2129,14 @@
         "verification": "verified",
         "sources": [
           "anthropic-deprecations"
-        ]
+        ],
+        "aliases": [
+          "claude-sonnet-4-0"
+        ],
+        "aliasSources": [
+          "anthropic-model-ids"
+        ],
+        "aliasNote": "Alias derived from the rule on Anthropic's model-IDs page (models before the 4.6 generation have a dateless alias per minor version that points to the latest snapshot); the page does not list it by name or say when an alias stops working. n8n-sunset assumes it retires with its snapshot. Claude 4.0 IDs have no minor segment, so the \"-0\" form is an inference."
       },
       {
         "id": "claude-opus-4-20250514",
@@ -2116,7 +2146,14 @@
         "verification": "verified",
         "sources": [
           "anthropic-deprecations"
-        ]
+        ],
+        "aliases": [
+          "claude-opus-4-0"
+        ],
+        "aliasSources": [
+          "anthropic-model-ids"
+        ],
+        "aliasNote": "Alias derived from the rule on Anthropic's model-IDs page (models before the 4.6 generation have a dateless alias per minor version that points to the latest snapshot); the page does not list it by name or say when an alias stops working. n8n-sunset assumes it retires with its snapshot. Claude 4.0 IDs have no minor segment, so the \"-0\" form is an inference."
       },
       {
         "id": "claude-3-haiku-20240307",
@@ -2277,587 +2314,980 @@
         "sources": [
           "anthropic-deprecations"
         ]
+      },
+      {
+        "id": "claude-2",
+        "shutdownDate": "2025-07-21",
+        "replacement": "claude-opus-4-8",
+        "announcement": "2025-01-21: Claude 2, Claude 2.1, and Claude Sonnet 3 models",
+        "verification": "unverified",
+        "verificationNote": "An option value of n8n's Anthropic Chat Model (version 1), not an ID on Anthropic's page, which lists claude-2.0 and claude-2.1, all retired on 2025-07-21.",
+        "sources": [
+          "anthropic-deprecations",
+          "n8n-lmchat-anthropic"
+        ]
+      },
+      {
+        "id": "claude-instant-1",
+        "shutdownDate": "2024-11-06",
+        "replacement": "claude-haiku-4-5-20251001",
+        "announcement": "2024-09-04: Claude 1 and Instant models",
+        "verification": "unverified",
+        "verificationNote": "An option value of n8n's Anthropic Chat Model (version 1), not an ID on Anthropic's page, which lists claude-instant-1.0, 1.1 and 1.2, all retired on 2024-11-06.",
+        "sources": [
+          "anthropic-deprecations",
+          "n8n-lmchat-anthropic"
+        ]
       }
     ]
   },
   "gemini": {
     "source": "gemini-deprecations",
-    "matching": "Model IDs match exactly, with or without the \"models/\" prefix and a trailing \":generateContent\"-style method. Only models with a shutdown date are listed: the deprecations table, plus dated announcements that only the release notes carry, plus the three Gemini 1.5 models the release notes of 2025-09-29 report as shut down (their date is the date of that notice, so they are marked unverified). Google states that the table dates are the earliest possible shutdown dates and that it confirms the exact date to users in advance.",
-    "excluded": "Left out: rows that say \"No shutdown date announced\" (including gemini-3-flash-preview, which has a replacement but no date); the managed agent antigravity-preview-05-2026 (an agent, not a model ID); versioned and alias names of the 1.5 family (gemini-1.5-pro-001, gemini-1.5-pro-002, gemini-1.5-flash-001, gemini-1.5-flash-002, gemini-1.5-flash-8b-001, the -latest names), because the cited release-notes entry names only gemini-1.5-pro, gemini-1.5-flash-8b and gemini-1.5-flash; Gemini 1.0 models and other models the release notes only mention as removed or no longer supported; gemini-omni-flash-preview, which the release notes say will be deprecated (not shut down) on 2026-09-30; Vertex AI model IDs, which have their own lifecycle.",
+    "matching": "Model IDs match exactly, with or without the \"models/\" prefix and a trailing \":generateContent\"-style method, and so do the aliases listed with them (IDs as launched where the table spells them differently, and the Gemini 1.5 -latest names); alias matches are reported as unverified. Each entry has a dateStatus: \"confirmed\" (the release notes reported the shutdown), \"announced\" (the release notes announced that date), or \"earliest\" (only the deprecations table, whose dates Google calls the earliest possible). A past \"earliest\" date is reported as a warning, because nothing confirms the shutdown. gemini-3-pro-preview is reported as a behavior change: Google points the ID at gemini-3.1-pro-preview.",
+    "excluded": "Left out: rows that say \"No shutdown date announced\" (including gemini-3-flash-preview, which has a replacement but no date); the Gemini 1.0 models, which the release notes only call \"no longer supported\" (2025-02-18); the 1.5 tuning model (2025-05-27 notice); gemini-omni-flash-preview, which the release notes say will be deprecated (not shut down) on 2026-09-30; Vertex AI model IDs, which have their own lifecycle.",
     "models": [
       {
         "id": "gemini-3.1-flash-lite",
         "shutdownDate": "2027-05-07",
         "replacement": "gemini-3.5-flash-lite",
-        "announcement": "Gemini 3 models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "gemini-3.1-flash-image-preview",
         "shutdownDate": "2026-06-25",
         "replacement": "gemini-3.1-flash-image",
-        "announcement": "Gemini 3 models table on the deprecations page",
+        "announcement": "2026-05-28: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-3-pro-image-preview",
         "shutdownDate": "2026-06-25",
         "replacement": "gemini-3-pro-image",
-        "announcement": "Gemini 3 models table on the deprecations page",
+        "announcement": "2026-05-28: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-3-pro-preview",
         "shutdownDate": "2026-03-09",
         "replacement": "gemini-3.1-pro-preview",
-        "announcement": "Gemini 3 models table on the deprecations page",
+        "announcement": "2026-02-26: release notes (shutdown date announced); 2026-03-09: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed",
+        "redirectsTo": "gemini-3.1-pro-preview",
+        "redirectNote": "The release notes of 2026-03-09 say the Gemini 3 Pro Preview model was shut down and that the gemini-3-pro-preview ID now points to gemini-3.1-pro-preview."
       },
       {
         "id": "gemini-3.1-flash-lite-preview",
         "shutdownDate": "2026-05-25",
         "replacement": "gemini-3.1-flash-lite",
-        "announcement": "Gemini 3 models table on the deprecations page",
+        "announcement": "2026-05-07: release notes (shutdown date announced); 2026-05-25: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.5-computer-use-preview-10-2025",
         "shutdownDate": "2026-07-28",
         "replacement": "gemini-3.8-flash",
-        "announcement": "Gemini 2.5 Pro models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "gemini-2.5-pro-preview-03-25",
         "shutdownDate": "2025-12-02",
         "replacement": "gemini-3.1-pro-preview",
-        "announcement": "Gemini 2.5 Pro models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.5-pro-preview-05-06",
         "shutdownDate": "2025-12-02",
         "replacement": "gemini-3.1-pro-preview",
-        "announcement": "Gemini 2.5 Pro models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.5-pro-preview-06-05",
         "shutdownDate": "2025-12-02",
         "replacement": "gemini-3.1-pro-preview",
-        "announcement": "Gemini 2.5 Pro models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.5-flash-image",
         "shutdownDate": "2026-10-02",
         "replacement": "gemini-3.1-flash-image-preview",
-        "announcement": "Gemini 2.5 Flash models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "gemini-2.5-flash-lite-preview-09-2025",
         "shutdownDate": "2026-03-31",
         "replacement": "gemini-3.1-flash-lite",
-        "announcement": "Gemini 2.5 Flash models table on the deprecations page",
+        "announcement": "2026-03-10: release notes (shutdown date announced); 2026-03-31: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.5-flash-preview-05-20",
         "shutdownDate": "2025-11-18",
         "replacement": "gemini-3.6-flash",
-        "announcement": "Gemini 2.5 Flash models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.5-flash-image-preview",
         "shutdownDate": "2026-01-15",
         "replacement": "gemini-2.5-flash-image",
-        "announcement": "Gemini 2.5 Flash models table on the deprecations page",
+        "announcement": "2025-12-04: release notes (shutdown date announced); 2026-01-15: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.5-flash-preview-09-25",
         "shutdownDate": "2026-02-17",
         "replacement": "gemini-3.6-flash",
-        "announcement": "Gemini 2.5 Flash models table on the deprecations page",
+        "announcement": "2026-01-15: release notes (shutdown date announced); 2026-02-17: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed",
+        "aliases": [
+          "gemini-2.5-flash-preview-09-2025"
+        ],
+        "aliasSources": [
+          "gemini-changelog"
+        ],
+        "aliasNote": "Launched under this ID (release notes 2025-09-25); the deprecations table and the later release notes spell it gemini-2.5-flash-preview-09-25. n8n-sunset assumes both names refer to the same model."
       },
       {
         "id": "gemini-2.0-flash",
         "shutdownDate": "2026-06-01",
         "replacement": "gemini-3.6-flash",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2026-02-18: release notes (shutdown date announced); 2026-06-01: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.0-flash-001",
         "shutdownDate": "2026-06-01",
         "replacement": "gemini-3.6-flash",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2026-02-18: release notes (shutdown date announced); 2026-06-01: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.0-flash-lite",
         "shutdownDate": "2026-06-01",
         "replacement": "gemini-3.1-flash-lite",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2026-02-18: release notes (shutdown date announced); 2026-06-01: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.0-flash-lite-001",
         "shutdownDate": "2026-06-01",
         "replacement": "gemini-3.1-flash-lite",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2026-02-18: release notes (shutdown date announced); 2026-06-01: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.0-flash-preview-image-generation",
         "shutdownDate": "2025-11-14",
         "replacement": "gemini-2.5-flash-image",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2025-11-11: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-lite-preview",
         "shutdownDate": "2025-12-09",
         "replacement": "gemini-2.5-flash-lite",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-lite-preview-02-05",
         "shutdownDate": "2025-12-09",
         "replacement": "gemini-2.5-flash-lite",
-        "announcement": "Gemini 2.0 models table on the deprecations page",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-live-001",
         "shutdownDate": "2025-12-09",
         "replacement": "gemini-3.8-live",
-        "announcement": "Live API models table on the deprecations page",
+        "announcement": "2025-10-20: release notes (shutdown date announced); 2025-12-09: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-live-2.5-flash-preview",
         "shutdownDate": "2025-12-09",
         "replacement": "gemini-3.8-live",
-        "announcement": "Live API models table on the deprecations page",
+        "announcement": "2025-10-20: release notes (shutdown date announced); 2025-12-09: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-embedding-001",
         "shutdownDate": "2028-05-14",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "text-embedding-004",
         "shutdownDate": "2026-01-14",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "2025-12-03: release notes (shutdown date announced); 2026-01-14: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "embedding-2-preview",
         "shutdownDate": "2026-08-10",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest",
+        "aliases": [
+          "gemini-embedding-2-preview"
+        ],
+        "aliasSources": [
+          "gemini-changelog"
+        ],
+        "aliasNote": "Launched under this ID (release notes 2026-03-10); the deprecations table lists it as embedding-2-preview. n8n-sunset assumes both names refer to the same model."
       },
       {
         "id": "embedding-001",
         "shutdownDate": "2025-10-30",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "2025-09-16: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced",
+        "note": "The release notes announced the shutdown for \"October 2025\"; the day is from the deprecations table."
       },
       {
         "id": "embedding-gecko-001",
         "shutdownDate": "2025-10-30",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "2025-09-16: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced",
+        "note": "The release notes announced the shutdown for \"October 2025\"; the day is from the deprecations table."
       },
       {
         "id": "gemini-embedding-exp",
         "shutdownDate": "2025-10-30",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "2025-09-16: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced",
+        "note": "The release notes announced the shutdown for \"October 2025\"; the day is from the deprecations table."
       },
       {
         "id": "gemini-embedding-exp-03-07",
         "shutdownDate": "2025-10-30",
         "replacement": "gemini-embedding-2",
-        "announcement": "Embedding models table on the deprecations page",
+        "announcement": "2025-09-16: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced",
+        "note": "The release notes announced the shutdown for \"October 2025\"; the day is from the deprecations table."
       },
       {
         "id": "imagen-4.0-generate-001",
         "shutdownDate": "2026-08-17",
         "replacement": "gemini-3.1-flash-image",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "imagen-4.0-ultra-generate-001",
         "shutdownDate": "2026-08-17",
         "replacement": "gemini-3.1-flash-image",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "imagen-4.0-fast-generate-001",
         "shutdownDate": "2026-08-17",
         "replacement": "gemini-3.1-flash-image",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "imagen-3.0-generate-002",
         "shutdownDate": "2025-11-10",
         "replacement": "imagen-4.0-generate-001",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2025-11-10: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "imagen-4.0-generate-preview-06-06",
         "shutdownDate": "2026-02-17",
         "replacement": "imagen-4.0-generate-001",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2026-01-15: release notes (shutdown date announced); 2026-02-17: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "imagen-4.0-ultra-generate-preview-06-06",
         "shutdownDate": "2026-02-17",
         "replacement": "imagen-4.0-ultra-generate-001",
-        "announcement": "Imagen models table on the deprecations page",
+        "announcement": "2026-01-15: release notes (shutdown date announced); 2026-02-17: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "veo-3.0-generate-001",
         "shutdownDate": "2026-06-30",
         "replacement": "veo-3.1-generate-preview or the GA models on the Gemini Enterprise Agent Platform",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "veo-3.0-fast-generate-001",
         "shutdownDate": "2026-06-30",
         "replacement": "veo-3.1-fast-generate-preview or the GA models on the Gemini Enterprise Agent Platform",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "veo-2.0-generate-001",
         "shutdownDate": "2026-06-30",
         "replacement": "veo-3.1-generate-preview or the GA models on the Gemini Enterprise Agent Platform",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "2026-06-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "veo-3.1-lite-generate-preview",
         "shutdownDate": "2026-10-22",
         "replacement": "gemini-omni-1.1-flash",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "veo-3.1-generate-preview",
         "shutdownDate": "2026-10-22",
         "replacement": "gemini-omni-1.1-flash",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "veo-3.1-fast-generate-preview",
         "shutdownDate": "2026-10-22",
         "replacement": "gemini-omni-1.1-flash",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "Deprecations table only (no dated announcement in the release notes; the table date is the earliest possible)",
         "verification": "verified",
         "sources": [
           "gemini-deprecations"
-        ]
+        ],
+        "dateStatus": "earliest"
       },
       {
         "id": "veo-3.0-generate-preview",
         "shutdownDate": "2025-11-12",
         "replacement": "veo-3.1-generate-preview",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "2025-10-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "veo-3.0-fast-generate-preview",
         "shutdownDate": "2025-11-12",
         "replacement": "veo-3.1-fast-generate-preview",
-        "announcement": "Veo models table on the deprecations page",
+        "announcement": "2025-10-15: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-robotics-er-1.6-preview",
         "shutdownDate": "2026-08-31",
         "replacement": "gemini-robotics-er-2-preview",
-        "announcement": "Robotics models table on the deprecations page",
+        "announcement": "2026-07-30: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-robotics-er-1.5-preview",
         "shutdownDate": "2026-04-30",
         "replacement": "gemini-robotics-er-1.6-preview",
-        "announcement": "Robotics models table on the deprecations page",
+        "announcement": "2026-04-14: release notes (shutdown date announced); 2026-04-30: release notes (reported as shut down)",
         "verification": "verified",
         "sources": [
-          "gemini-deprecations"
-        ]
+          "gemini-deprecations",
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed"
       },
       {
         "id": "gemini-2.0-flash-exp-image-generation",
         "shutdownDate": "2025-11-14",
         "replacement": null,
-        "announcement": "2025-11-11: release notes",
+        "announcement": "2025-11-11: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.5-flash-lite-preview-06-17",
         "shutdownDate": "2025-11-18",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-thinking-exp",
         "shutdownDate": "2025-12-02",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-thinking-exp-01-21",
         "shutdownDate": "2025-12-02",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-thinking-exp-1219",
         "shutdownDate": "2025-12-02",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-flash-exp",
         "shutdownDate": "2025-12-09",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-pro-exp",
         "shutdownDate": "2025-12-09",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-2.0-pro-exp-02-05",
         "shutdownDate": "2025-12-09",
         "replacement": null,
-        "announcement": "2025-11-04: release notes",
+        "announcement": "2025-11-04: release notes (shutdown date announced)",
         "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "announced"
       },
       {
         "id": "gemini-1.5-pro",
         "shutdownDate": "2025-09-29",
         "replacement": null,
-        "announcement": "2025-09-29: release notes (\"now shut down\")",
-        "verification": "unverified",
-        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "confirmed",
+        "note": "The release notes of 2025-09-29 report these models as shut down; no earlier date was announced, so 2025-09-29 is the date of that notice."
       },
       {
         "id": "gemini-1.5-flash-8b",
         "shutdownDate": "2025-09-29",
         "replacement": null,
-        "announcement": "2025-09-29: release notes (\"now shut down\")",
-        "verification": "unverified",
-        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "verified",
         "sources": [
           "gemini-changelog"
-        ]
+        ],
+        "dateStatus": "confirmed",
+        "note": "The release notes of 2025-09-29 report these models as shut down; no earlier date was announced, so 2025-09-29 is the date of that notice."
       },
       {
         "id": "gemini-1.5-flash",
         "shutdownDate": "2025-09-29",
         "replacement": null,
-        "announcement": "2025-09-29: release notes (\"now shut down\")",
-        "verification": "unverified",
-        "verificationNote": "The 2025-09-29 release notes say these models \"are now shut down\" and give no earlier dated announcement, so 2025-09-29 is the date of the notice; the service may have stopped on an earlier day.",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "verified",
         "sources": [
+          "gemini-changelog"
+        ],
+        "dateStatus": "confirmed",
+        "note": "The release notes of 2025-09-29 report these models as shut down; no earlier date was announced, so 2025-09-29 is the date of that notice."
+      },
+      {
+        "id": "gemini-2.5-flash-preview-native-audio-dialog",
+        "shutdownDate": "2025-10-20",
+        "replacement": "gemini-2.5-flash-native-audio-preview-09-2025",
+        "dateStatus": "confirmed",
+        "announcement": "2025-10-20: release notes (reported as shut down)",
+        "verification": "verified",
+        "note": "The release notes of 2025-10-20 report this model as shut down; no earlier date was announced, so 2025-10-20 is the date of that notice.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-2.5-flash-exp-native-audio-thinking-dialog",
+        "shutdownDate": "2025-10-20",
+        "replacement": "gemini-2.5-flash-native-audio-preview-09-2025",
+        "dateStatus": "confirmed",
+        "announcement": "2025-10-20: release notes (reported as shut down)",
+        "verification": "verified",
+        "note": "The release notes of 2025-10-20 report this model as shut down; no earlier date was announced, so 2025-10-20 is the date of that notice.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-2.5-pro-exp-03-25",
+        "shutdownDate": "2025-06-26",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-06-26: release notes (reported as shut down)",
+        "verification": "verified",
+        "note": "The release notes of 2025-06-26 report this model as shut down; no earlier date was announced, so 2025-06-26 is the date of that notice.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-pro-001",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "unverified",
+        "verificationNote": "Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-pro-002",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "unverified",
+        "verificationNote": "Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them.",
+        "sources": [
+          "gemini-changelog"
+        ],
+        "aliases": [
+          "gemini-1.5-pro-latest"
+        ],
+        "aliasSources": [
+          "gemini-changelog"
+        ],
+        "aliasNote": "The release notes of 2024-09-24 say gemini-1.5-pro-latest points to gemini-1.5-pro-002. Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them."
+      },
+      {
+        "id": "gemini-1.5-flash-001",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "unverified",
+        "verificationNote": "Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "gemini-1.5-flash-002",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "unverified",
+        "verificationNote": "Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them.",
+        "sources": [
+          "gemini-changelog"
+        ],
+        "aliases": [
+          "gemini-1.5-flash-latest"
+        ],
+        "aliasSources": [
+          "gemini-changelog"
+        ],
+        "aliasNote": "The release notes of 2024-09-24 and 2024-11-21 say gemini-1.5-flash-latest points to gemini-1.5-flash-002. Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them."
+      },
+      {
+        "id": "gemini-1.5-flash-8b-001",
+        "shutdownDate": "2025-09-29",
+        "replacement": null,
+        "dateStatus": "confirmed",
+        "announcement": "2025-09-29: release notes (reported as shut down)",
+        "verification": "unverified",
+        "verificationNote": "Not named in the 2025-09-29 notice, which reports gemini-1.5-pro, gemini-1.5-flash and gemini-1.5-flash-8b as shut down; earlier release notes say those names (and the -latest aliases) resolve to the -002 versions. n8n-sunset assumes the whole 1.5 family shut down with them.",
+        "sources": [
+          "gemini-changelog"
+        ]
+      },
+      {
+        "id": "antigravity-preview-05-2026",
+        "shutdownDate": "2026-10-05",
+        "replacement": "antigravity-preview-09-2026",
+        "dateStatus": "announced",
+        "announcement": "2026-09-17: release notes (shutdown date announced)",
+        "verification": "verified",
+        "noun": "Gemini API managed agent",
+        "sources": [
+          "gemini-deprecations",
           "gemini-changelog"
         ]
       }
     ]
-  }
+  },
+  "modelDefaults": [
+    {
+      "id": "anthropic-chat-model-v1",
+      "nodeType": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 1,
+      "parameter": "model",
+      "model": "claude-2",
+      "provider": "anthropic",
+      "label": "Anthropic Chat Model 1",
+      "sources": [
+        "n8n-lmchat-anthropic"
+      ]
+    },
+    {
+      "id": "anthropic-chat-model-v1.1",
+      "nodeType": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "minTypeVersion": 1.1,
+      "maxTypeVersion": 1.1,
+      "parameter": "model",
+      "model": "claude-3-sonnet-20240229",
+      "provider": "anthropic",
+      "label": "Anthropic Chat Model 1.1",
+      "sources": [
+        "n8n-lmchat-anthropic"
+      ]
+    },
+    {
+      "id": "anthropic-chat-model-v1.2",
+      "nodeType": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "minTypeVersion": 1.2,
+      "maxTypeVersion": 1.2,
+      "parameter": "model",
+      "model": "claude-3-5-sonnet-20240620",
+      "provider": "anthropic",
+      "label": "Anthropic Chat Model 1.2",
+      "sources": [
+        "n8n-lmchat-anthropic"
+      ]
+    },
+    {
+      "id": "anthropic-chat-model-v1.3",
+      "nodeType": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "minTypeVersion": 1.3,
+      "maxTypeVersion": 1.3,
+      "parameter": "model",
+      "model": "claude-sonnet-4-5-20250929",
+      "provider": "anthropic",
+      "label": "Anthropic Chat Model 1.3",
+      "sources": [
+        "n8n-lmchat-anthropic"
+      ]
+    },
+    {
+      "id": "openai-audio-generate",
+      "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 2.3,
+      "when": {
+        "resource": "audio",
+        "operation": "generate"
+      },
+      "whenDefaults": {
+        "operation": "generate"
+      },
+      "parameter": "model",
+      "model": "tts-1",
+      "provider": "openai",
+      "label": "OpenAI node: resource=audio, operation=generate",
+      "sources": [
+        "n8n-openai-audio"
+      ],
+      "replacement": "gpt-realtime-2.1-mini (OpenAI's replacement; this node only offers tts-1 and tts-1-hd, so call the Realtime API with an HTTP Request node)"
+    },
+    {
+      "id": "openai-audio-transcribe",
+      "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 2.3,
+      "when": {
+        "resource": "audio",
+        "operation": "transcribe"
+      },
+      "fixed": true,
+      "model": "whisper-1",
+      "provider": "openai",
+      "label": "OpenAI node: resource=audio, operation=transcribe",
+      "sources": [
+        "n8n-openai-audio"
+      ],
+      "replacement": "gpt-live-transcribe or gpt-transcribe (OpenAI's replacements; this node always uses whisper-1, so call the API with an HTTP Request node)"
+    },
+    {
+      "id": "openai-audio-translate",
+      "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 2.3,
+      "when": {
+        "resource": "audio",
+        "operation": "translate"
+      },
+      "fixed": true,
+      "model": "whisper-1",
+      "provider": "openai",
+      "label": "OpenAI node: resource=audio, operation=translate",
+      "sources": [
+        "n8n-openai-audio"
+      ],
+      "replacement": "gpt-live-transcribe or gpt-transcribe (OpenAI's replacements; this node always uses whisper-1, so call the API with an HTTP Request node)"
+    },
+    {
+      "id": "gemini-image-generate",
+      "nodeType": "@n8n/n8n-nodes-langchain.googleGemini",
+      "minTypeVersion": 1.2,
+      "maxTypeVersion": 1.2,
+      "when": {
+        "resource": "image",
+        "operation": "generate"
+      },
+      "whenDefaults": {
+        "operation": "generate"
+      },
+      "parameter": "modelId",
+      "model": "models/gemini-3.1-flash-image-preview",
+      "provider": "gemini",
+      "label": "Google Gemini node: resource=image, operation=generate",
+      "sources": [
+        "n8n-gemini-image"
+      ]
+    }
+  ]
 }

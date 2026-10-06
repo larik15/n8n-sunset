@@ -1,0 +1,164 @@
+{
+  "id": "wf-gemini-review",
+  "name": "Gemini edge cases",
+  "nodes": [
+    {
+      "parameters": { "modelName": "models/gemini-3-pro-preview" },
+      "id": "1",
+      "name": "Pro 3 preview (redirected)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-2.5-computer-use-preview-10-2025" },
+      "id": "2",
+      "name": "Computer use preview (earliest date passed)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-embedding-2-preview" },
+      "id": "3",
+      "name": "Embedding 2 preview, launched ID",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "modelName": "gemini-2.5-flash-preview-09-2025" },
+      "id": "4",
+      "name": "Flash preview, launched ID",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-1.5-flash-latest" },
+      "id": "5",
+      "name": "1.5 Flash latest",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-1.5-pro-002" },
+      "id": "6",
+      "name": "1.5 Pro 002",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-2.5-flash-preview-native-audio-dialog" },
+      "id": "7",
+      "name": "Native audio dialog",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"agent\": \"antigravity-preview-05-2026\", \"input\": \"Fix the failing test\"}"
+      },
+      "id": "8",
+      "name": "Antigravity agent call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 0]
+    },
+    {
+      "parameters": { "model": { "__rl": true, "value": "gemini-2.0-flash", "mode": "id" }, "options": { "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/" } },
+      "id": "9",
+      "name": "OpenAI Chat Model pointed at Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "credentials": { "openAiApi": { "id": "2", "name": "Gemini via OpenAI format" } },
+      "position": [1600, 0]
+    },
+    {
+      "parameters": { "jsCode": "const key = $env.GEMINI_KEY;\nconst res = await this.helpers.httpRequest({ method: 'POST', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`, body: $json });\nreturn [{ json: res }];" },
+      "id": "10",
+      "name": "Code calling the Gemini REST API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 0]
+    },
+    {
+      "parameters": { "jsCode": "const url = 'https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/publishers/google/models/gemini-2.0-flash:generateContent';\nconst model = 'gemini-2.0-flash';\nreturn [{ json: { url, model } }];" },
+      "id": "11",
+      "name": "Code calling Vertex AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 0]
+    },
+    {
+      "parameters": { "jsCode": "// was 'gemini-2.0-flash'\n/* old: \"gemini-2.0-flash-lite\" */\nconst model = 'gemini-2.5-flash'; // migrated from 'gemini-1.5-flash'\nreturn [{ json: { model } }];" },
+      "id": "12",
+      "name": "Old IDs only in JS comments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": { "language": "python", "pythonCode": "# old: 'gemini-2.0-flash'\nmodel = 'gemini-2.5-flash'  # was \"gemini-1.5-flash\"\nnote = 'a # inside a string, then a model'\nreturn [{'json': {'model': model}}]" },
+      "id": "13",
+      "name": "Old IDs only in Python comments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 0]
+    },
+    {
+      "parameters": { "jsCode": "const docs = 'https://example.com//not-a-comment';\nconst model = 'gemini-2.0-flash-001'; /* still in use */\nreturn [{ json: { docs, model } }];" },
+      "id": "14",
+      "name": "Slashes inside a string are not a comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2600, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/embedding-2-preview:embedContent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"models/gemini-embedding-2-preview\", \"content\": {\"parts\": [{\"text\": \"a\"}]}}"
+      },
+      "id": "15",
+      "name": "Alias and its model in one node",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2800, 0]
+    },
+    {
+      "parameters": { "resource": "image", "prompt": "A lighthouse at night" },
+      "id": "16",
+      "name": "Untouched image generation (1.2)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [3000, 0]
+    },
+    {
+      "parameters": { "resource": "image", "prompt": "A lighthouse at night" },
+      "id": "17",
+      "name": "Untouched image generation (1.1, no default model)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [3200, 0]
+    },
+    {
+      "parameters": { "resource": "image", "modelId": { "__rl": true, "value": "models/imagen-4.0-generate-001", "mode": "list" }, "prompt": "A lighthouse" },
+      "id": "18",
+      "name": "Image generation with a model set",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [3400, 0]
+    }
+  ],
+  "connections": {}
+}

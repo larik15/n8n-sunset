@@ -72,6 +72,45 @@ export interface ProviderModel {
   sources: string[];
   /** Registry source keys that document the aliases; cited only when a workflow uses an alias. */
   aliasSources?: string[];
+  /** Why an alias match is uncertain; alias matches are always reported as unverified. */
+  aliasNote?: string;
+  /**
+   * Gemini: how firm the date is. "confirmed": the release notes reported the shutdown; "announced": they announced
+   * this date; "earliest": only the deprecations table, whose dates are the earliest possible. Missing = "announced".
+   */
+  dateStatus?: 'confirmed' | 'announced' | 'earliest';
+  /** The ID still answers, served by this model (e.g. gemini-3-pro-preview -> gemini-3.1-pro-preview). */
+  redirectsTo?: string;
+  redirectNote?: string;
+  /** What the thing is called in messages when it is not a model, e.g. "Gemini API managed agent". */
+  noun?: string;
+}
+
+/**
+ * A model an n8n node uses without naming it in the workflow JSON: the parameter is left at its default (n8n does
+ * not save defaults), or the node always uses one model (`fixed`).
+ */
+export interface ModelDefault {
+  id: string;
+  nodeType: string;
+  /** Type version range, inclusive; a missing typeVersion counts as 1. */
+  minTypeVersion: number;
+  maxTypeVersion: number;
+  /** Parameters that must have these values, e.g. { resource: 'audio', operation: 'generate' }. */
+  when?: Record<string, string>;
+  /** Values n8n uses for `when` parameters that the export leaves out. */
+  whenDefaults?: Record<string, string>;
+  /** The model parameter; the default applies only when it is absent. Not used when `fixed`. */
+  parameter?: string;
+  /** The node has no model setting and always uses `model`. */
+  fixed?: boolean;
+  model: string;
+  provider: 'openai' | 'anthropic' | 'gemini';
+  /** Names the node usage in the finding's location. */
+  label: string;
+  /** Replaces the registry's replacement text, e.g. when the suggested model can't be selected in this node. */
+  replacement?: string;
+  sources: string[];
 }
 
 export interface ProviderModels {
@@ -173,6 +212,13 @@ export interface Registry {
   };
   anthropic: ProviderModels;
   gemini: ProviderModels;
+  /** Models that nodes use by default or always; empty in registries written before 0.2.0. */
+  modelDefaults: ModelDefault[];
+}
+
+/** Provider sections a registry file does not have (written for 0.1.x); the CLI warns about each. */
+export function missingProviderSections(registry: Registry): ('anthropic' | 'gemini')[] {
+  return (['anthropic', 'gemini'] as const).filter((p) => !registry[p].source && registry[p].models.length === 0);
 }
 
 /** What a registry written before Anthropic and Gemini support gets, so `--registry` files from 0.1.x keep working. */
@@ -195,8 +241,11 @@ function referencedSources(registry: Registry): string[] {
       ...(p.source ? [p.source] : []),
       ...p.models.flatMap((m) => [...m.sources, ...(m.aliasSources ?? [])]),
     ]),
+    ...registry.modelDefaults.flatMap((d) => d.sources),
   ];
 }
+
+const DATE_STATUSES = new Set(['confirmed', 'announced', 'earliest']);
 
 /** Throws when a provider model entry is malformed: missing id, bad date, no source, or a duplicate ID or alias. */
 function validateProviderModels(name: string, section: ProviderModels): void {
@@ -205,6 +254,7 @@ function validateProviderModels(name: string, section: ProviderModels): void {
     if (typeof model.id !== 'string' || !model.id) throw new Error(`Registry ${name} has a model without an id`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(model.shutdownDate)) throw new Error(`Registry ${name} model ${model.id} has an invalid shutdownDate "${model.shutdownDate}"`);
     if (!Array.isArray(model.sources) || model.sources.length === 0) throw new Error(`Registry ${name} model ${model.id} cites no source`);
+    if (model.dateStatus !== undefined && !DATE_STATUSES.has(model.dateStatus)) throw new Error(`Registry ${name} model ${model.id} has an invalid dateStatus "${model.dateStatus}"`);
     for (const label of [model.id, ...(model.aliases ?? [])]) {
       if (names.has(label)) throw new Error(`Registry ${name} lists "${label}" twice`);
       names.add(label);
@@ -219,8 +269,14 @@ export function validateRegistry(registry: Registry): Registry {
   }
   registry.anthropic ??= noProviderModels();
   registry.gemini ??= noProviderModels();
+  registry.modelDefaults ??= [];
   validateProviderModels('anthropic', registry.anthropic);
   validateProviderModels('gemini', registry.gemini);
+  for (const d of registry.modelDefaults) {
+    if (!d.id || !d.nodeType || !d.model || !['openai', 'anthropic', 'gemini'].includes(d.provider) || (!d.fixed && !d.parameter)) {
+      throw new Error(`Registry modelDefaults entry "${d.id ?? '?'}" is incomplete`);
+    }
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(registry.registryVersion)) throw new Error(`Registry has an invalid registryVersion "${registry.registryVersion}"`);
   const unknown = [...new Set(referencedSources(registry).filter((key) => !registry.sources[key]))];
   if (unknown.length) throw new Error(`Registry references unknown source${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`);

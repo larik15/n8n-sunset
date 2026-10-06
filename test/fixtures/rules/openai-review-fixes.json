@@ -1,0 +1,71 @@
+{
+  "id": "wf-openai-review",
+  "name": "OpenAI node defaults",
+  "nodes": [
+    {
+      "parameters": { "resource": "audio", "input": "Your order has shipped" },
+      "id": "1",
+      "name": "Text to speech (untouched)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "resource": "audio", "model": "tts-1-hd", "input": "Your order has shipped" },
+      "id": "2",
+      "name": "Text to speech HD (set)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": { "resource": "audio", "operation": "transcribe", "binaryPropertyName": "data" },
+      "id": "3",
+      "name": "Transcribe a recording",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": { "resource": "audio", "operation": "translate", "binaryPropertyName": "data" },
+      "id": "4",
+      "name": "Translate a recording",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [600, 0]
+    },
+    {
+      "parameters": { "resource": "image", "model": "dall-e-3", "prompt": "A cat" },
+      "id": "5",
+      "name": "DALL-E 3 image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [800, 0]
+    },
+    {
+      "parameters": { "jsCode": "// was 'gpt-4'\nconst model = 'gpt-5.6-sol'; /* replaced \"gpt-4-turbo\" */\nreturn [{ json: { model } }];" },
+      "id": "6",
+      "name": "Old ID only in a comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": { "resource": "text", "prompt": "hi" },
+      "id": "7",
+      "name": "Text resource (no audio default)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": { "resource": "audio", "operation": "transcribe" },
+      "id": "8",
+      "name": "Transcribe on a future node version",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 3,
+      "position": [1400, 0]
+    }
+  ],
+  "connections": {}
+}

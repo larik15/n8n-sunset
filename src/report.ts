@@ -94,18 +94,29 @@ function whatCell(f: Finding, c: Colors): Cell {
   return cell;
 }
 
-function fitWidths(columns: Column[], cells: Cell[][], total: number): number[] {
+/** The widest single word in a column: a model ID or host name must not be split across lines. */
+function longestWord(cells: Cell[][], i: number): number {
+  return Math.max(0, ...cells.flatMap((row) => row[i]!.flatMap((p) => p.text.split(/\s+/).map((w) => displayWidth(w)))));
+}
+
+/**
+ * Column widths that keep every word whole (a model ID or host name split across lines can't be copied), or
+ * undefined when the terminal is too narrow for that; the caller then prints one block per finding instead.
+ */
+function fitWidths(columns: Column[], cells: Cell[][], total: number): number[] | undefined {
   const widths = columns.map((col, i) => {
     const natural = Math.max(displayWidth(col.header), ...cells.map((row) => Math.max(0, ...row[i]!.map((p) => displayWidth(p.text)))));
-    return Math.max(col.min, Math.min(col.max, natural));
+    return Math.max(col.min, Math.min(col.max, Math.max(natural, longestWord(cells, i))));
   });
+  // Columns shrink to their minimum, but never below their longest word.
+  const floor = columns.map((col, i) => Math.min(widths[i]!, Math.max(col.min, longestWord(cells, i))));
   const available = total - GAP * (columns.length - 1);
   while (widths.reduce((a, b) => a + b, 0) > available) {
     let widest = -1;
     for (let i = 0; i < widths.length; i++) {
-      if (widths[i]! > columns[i]!.min && (widest < 0 || widths[i]! - columns[i]!.min > widths[widest]! - columns[widest]!.min)) widest = i;
+      if (widths[i]! > floor[i]! && (widest < 0 || widths[i]! - floor[i]! > widths[widest]! - floor[widest]!)) widest = i;
     }
-    if (widest < 0) break;
+    if (widest < 0) return undefined;
     widths[widest]!--;
   }
   return widths;
@@ -146,8 +157,8 @@ function tableRow(f: Finding, c: Colors): Cell[] {
   ];
 }
 
-/** Column widths sized over every finding, so all sections line up. */
-function tableWidths(all: Finding[], c: Colors, width: number): number[] {
+/** Column widths sized over every finding, so all sections line up; undefined when words would have to be split. */
+function tableWidths(all: Finding[], c: Colors, width: number): number[] | undefined {
   return fitWidths(COLUMNS, all.map((f) => tableRow(f, c)), width);
 }
 
@@ -228,7 +239,6 @@ export function renderTable(result: ScanResult, registry: Registry, load: LoadRe
   const c = options.colors;
   const { summary } = result;
   const upgrade = registry.n8n.release.version;
-  const stacked = options.width < STACKED_BELOW;
   const out: string[] = [];
   /** Wraps prose to the terminal width before styling, so long lines stay readable in narrow terminals. */
   const prose = (text: string, style: Style = plain) => out.push(...wrap(text, options.width).map((line) => style(line)));
@@ -238,18 +248,19 @@ export function renderTable(result: ScanResult, registry: Registry, load: LoadRe
     `as of ${result.asOf} (UTC)`,
     `window ${result.windowDays} days`,
     ...(result.targets?.length ? [`target n8n ${result.targets.join(', ')}`] : []),
+    ...(result.skipRules?.length ? [`skipping ${result.skipRules.join(', ')}`] : []),
   ];
   out.push(...headerLines(segments, options.width, c), '');
 
   if (result.findings.length === 0) {
     prose(`No findings in ${plural(summary.workflowsScanned, 'workflow')}.`, c.green);
   } else {
-    const widths = tableWidths(result.findings, c, options.width);
+    const widths = options.width < STACKED_BELOW ? undefined : tableWidths(result.findings, c, options.width);
     for (const section of SECTIONS) {
       const findings = result.findings.filter(section.pick);
       if (!findings.length) continue;
       prose(`${section.title(upgrade)} (${plural(findings.length, 'finding')})`, c.bold);
-      out.push('', ...(stacked ? renderStacked(findings, c, options.width) : renderTableRows(findings, c, widths)), '');
+      out.push('', ...(widths ? renderTableRows(findings, c, widths) : renderStacked(findings, c, options.width)), '');
     }
     prose(
       `${plural(summary.findings, 'finding')} in ${plural(summary.nodesAffected, 'node')} across ${plural(summary.workflowsAffected, 'workflow')}: ` +
@@ -334,6 +345,7 @@ export function toJsonReport(
     asOf: result.asOf,
     windowDays: result.windowDays,
     targets: result.targets ?? [],
+    skipRules: result.skipRules ?? [],
     exitCode: meta.exitCode,
     summary: { ...result.summary, filesSkipped: load.skipped.length, fileErrors: load.errors.length, symlinksNotFollowed: load.symlinks.length },
     registry: {

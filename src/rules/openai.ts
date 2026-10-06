@@ -3,7 +3,9 @@ import type { LegacyFineTunes, OpenAiModel, Registry, Severity } from '../regist
 import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
+import { codeLanguage, stripComments } from './code.js';
 import { STICKY_NOTE } from './n8n.js';
+import { annotateReplacement, type ReplacementLookup } from './replacements.js';
 
 export interface ModelIndex {
   exact: Map<string, { entry: OpenAiModel; alias: boolean }>;
@@ -215,8 +217,11 @@ function candidates(leaf: StringLeaf, kind: Strategy['kind']): string[] {
     }
     case 'llm':
       return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : [];
-    case 'code':
-      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedTokens(leaf.value)] : quotedTokens(leaf.value);
+    case 'code': {
+      // Comments don't run: a quoted ID in `// was 'gpt-4'` must not keep a migrated workflow failing.
+      const code = stripComments(leaf.value, codeLanguage(leaf.key));
+      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedTokens(code)] : quotedTokens(code);
+    }
     case 'other':
       return isModelNamed(leaf) ? [wholeValue(leaf.value)] : [];
   }
@@ -237,7 +242,70 @@ const FINE_TUNE_NOTE =
 const PROVIDER_NOTE =
   'Provider-prefixed model ID (openai/<model>, as used by OpenRouter). OpenAI\'s date applies to OpenAI\'s API; the provider decides when its own route stops working.';
 
-export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index: ModelIndex, asOf: string): RuleFinding[] {
+/** For replacement notes: the date and replacement of a model the deprecations page lists by ID or alias. */
+export function openAiLookup(index: ModelIndex): ReplacementLookup {
+  return (id) => {
+    const entry = index.exact.get(id)?.entry;
+    return entry ? { shutdownDate: entry.shutdownDate, replacement: entry.replacement } : undefined;
+  };
+}
+
+export interface OpenAiFindingOptions {
+  /** Makes the finding a warning (may break, never fails the run). */
+  warning?: string;
+  /** Extra reason the finding is unverified, e.g. that the model comes from an n8n default. */
+  unverifiedNote?: string;
+  replacement?: string;
+  extraSources?: string[];
+}
+
+/** One finding for a matched model; also used for models that n8n nodes use by default or always. */
+export function openAiModelFinding(
+  registry: Registry,
+  index: ModelIndex,
+  match: ModelMatch,
+  locations: string[],
+  asOf: string,
+  windowDays: number,
+  options: OpenAiFindingOptions = {},
+): RuleFinding {
+  const { entry } = match;
+  const legacy = registry.openai.legacyFineTunes;
+  const past = entry.shutdownDate <= asOf;
+  // A warning is a possible break that needs review; it never sets the exit code.
+  const warning = options.warning ?? (match.kind === 'provider-prefixed' ? PROVIDER_NOTE : undefined);
+  const suffixForm = match.suffix || match.inner?.suffix ? legacy.suffixForm : undefined;
+  const dataNote =
+    match.kind === 'fine-tune' || match.inner?.kind === 'fine-tune'
+      ? FINE_TUNE_NOTE
+      : suffixForm?.verification === 'unverified'
+        ? suffixForm.verificationNote
+        : entry.verification === 'unverified'
+          ? entry.verificationNote
+          : undefined;
+  const notes = [warning ?? dataNote, options.unverifiedNote].filter((n): n is string => Boolean(n));
+  const legacyKind = match.kind === 'legacy-fine-tune' || match.inner?.kind === 'legacy-fine-tune';
+  const severity: Severity = warning ? 'warning' : 'breaking';
+  const listed = options.replacement ?? entry.replacement;
+  const sources = legacyKind ? sourceUrls(registry, suffixForm?.sources ?? legacy.sources) : sourceUrls(registry, [registry.openai.source]);
+  return {
+    category: 'openai-model',
+    ruleId: 'openai/model-shutdown',
+    severity,
+    message: past
+      ? `OpenAI has shut down model ${describe(match)}; API calls fail.`
+      : `OpenAI shuts down model ${describe(match)}; API calls will fail.`,
+    trigger: { kind: 'date', date: entry.shutdownDate },
+    replacement: listed ? annotateReplacement(listed, openAiLookup(index), asOf, windowDays) : 'None listed by OpenAI',
+    verification: notes.length ? 'unverified' : 'verified',
+    ...(notes.length ? { verificationNote: notes.join(' ') } : {}),
+    sources: [...new Set([...sources, ...sourceUrls(registry, options.extraSources ?? [])])],
+    model: match.token,
+    locations,
+  };
+}
+
+export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index: ModelIndex, asOf: string, windowDays = 30): RuleFinding[] {
   const strategy = strategyFor(node);
   if (!strategy) return [];
 
@@ -253,40 +321,7 @@ export function checkOpenAiModels(node: WorkflowNode, registry: Registry, index:
     }
   }
 
-  const [openAiUrl] = sourceUrls(registry, [registry.openai.source]);
-  const legacy = registry.openai.legacyFineTunes;
-
-  return [...matches.values()].map(({ match, paths }) => {
-    const { entry } = match;
-    const past = entry.shutdownDate <= asOf;
-    // A warning is a possible break that needs review; it never sets the exit code.
-    const warning = strategy.warning ?? (match.kind === 'provider-prefixed' ? PROVIDER_NOTE : undefined);
-    const suffixForm = match.suffix || match.inner?.suffix ? legacy.suffixForm : undefined;
-    const unverifiedNote =
-      warning ??
-      (match.kind === 'fine-tune' || match.inner?.kind === 'fine-tune'
-        ? FINE_TUNE_NOTE
-        : suffixForm?.verification === 'unverified'
-          ? suffixForm.verificationNote
-          : entry.verification === 'unverified'
-            ? entry.verificationNote
-            : undefined);
-    const legacyKind = match.kind === 'legacy-fine-tune' || match.inner?.kind === 'legacy-fine-tune';
-    const severity: Severity = warning ? 'warning' : 'breaking';
-    return {
-      category: 'openai-model',
-      ruleId: 'openai/model-shutdown',
-      severity,
-      message: past
-        ? `OpenAI has shut down model ${describe(match)}; API calls fail.`
-        : `OpenAI shuts down model ${describe(match)}; API calls will fail.`,
-      trigger: { kind: 'date', date: entry.shutdownDate },
-      replacement: entry.replacement ?? 'None listed by OpenAI',
-      verification: unverifiedNote ? 'unverified' : 'verified',
-      ...(unverifiedNote ? { verificationNote: unverifiedNote } : {}),
-      sources: legacyKind ? sourceUrls(registry, suffixForm?.sources ?? legacy.sources) : [openAiUrl!],
-      model: match.token,
-      locations: paths.map((path) => `${strategy.where}: ${path}`),
-    } satisfies RuleFinding;
-  });
+  return [...matches.values()].map(({ match, paths }) =>
+    openAiModelFinding(registry, index, match, paths.map((path) => `${strategy.where}: ${path}`), asOf, windowDays, strategy.warning ? { warning: strategy.warning } : {}),
+  );
 }

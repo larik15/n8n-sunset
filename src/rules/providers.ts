@@ -3,8 +3,10 @@ import type { ProviderModel, Registry, Severity } from '../registry.js';
 import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
+import { codeLanguage, stripComments } from './code.js';
 import { STICKY_NOTE } from './n8n.js';
 import { CODE_TYPES, HTTP_BODY_TEXT_KEYS, HTTP_PARAMETER_LIST_KEYS, HTTP_TYPES, isModelNamed, isModelPair, rootKey, urlHost, urlSegments, wholeValue } from './openai.js';
+import { annotateReplacement, type ReplacementLookup } from './replacements.js';
 
 /**
  * Model retirements announced by Anthropic and Google (Gemini API). One engine serves both: a provider is
@@ -22,17 +24,18 @@ interface ProviderSpec {
   credential: string;
   /** Node types of the provider's own nodes (chat models, the Anthropic / Google Gemini node, embeddings). */
   ownNode: RegExp;
-  /** Platforms that resell the model under their own IDs and schedule (Bedrock, Vertex AI, Azure): not checked. */
+  /** Platforms that serve the models under their own retirement schedules (Amazon Bedrock, Google Cloud Vertex AI): not checked. */
   skipNode: RegExp;
-  /** Name used in locations and notes: "Anthropic node parameter". */
+  /** Code that calls those platforms instead of the provider's own API. */
+  foreignCode: RegExp;
+  foreignName: string;
+  /** Name used in locations: "Anthropic node parameter". */
   nodeLabel: string;
   /** The provider's own nodes as a phrase, and the provider as a name: "an Anthropic node", "Anthropic". */
   ownNodePhrase: string;
   providerName: string;
   shutdownVerb: { past: string; upcoming: string };
   replacementNone: string;
-  /** Extra sentence for findings that are still ahead; Google lists its table dates as the earliest possible. */
-  upcomingNote?: string;
   /** What the model is called in a message, e.g. `Gemini API model "gemini-2.0-flash"`. */
   noun: string;
 }
@@ -45,7 +48,10 @@ const SPECS: Record<ProviderKey, ProviderSpec> = {
     host: 'api.anthropic.com',
     credential: 'anthropicApi',
     ownNode: /anthropic/i,
-    skipNode: /bedrock|vertex|azure/i,
+    // Anthropic's dates also cover Claude Platform on AWS and Microsoft Foundry; only Bedrock and Google Cloud differ.
+    skipNode: /bedrock|vertex/i,
+    foreignCode: /bedrock|aiplatform\.googleapis\.com|AnthropicVertex|AnthropicBedrock|@anthropic-ai\/(vertex|bedrock)-sdk/i,
+    foreignName: 'Amazon Bedrock or Google Cloud Vertex AI',
     nodeLabel: 'Anthropic node parameter',
     ownNodePhrase: 'an Anthropic node',
     providerName: 'Anthropic',
@@ -60,13 +66,14 @@ const SPECS: Record<ProviderKey, ProviderSpec> = {
     host: 'generativelanguage.googleapis.com',
     credential: 'googlePalmApi',
     ownNode: /googleGemini/i,
-    skipNode: /vertex|bedrock|azure/i,
+    skipNode: /vertex|bedrock/i,
+    foreignCode: /aiplatform\.googleapis\.com|vertexai\s*[:=]\s*(true|True)|@google-cloud\/vertexai|vertexai\.generative_models|\bVertexAI\b/,
+    foreignName: 'Google Cloud Vertex AI',
     nodeLabel: 'Google Gemini node parameter',
     ownNodePhrase: 'a Google Gemini node',
     providerName: 'Google',
     shutdownVerb: { past: 'Google has shut down', upcoming: 'Google shuts down' },
     replacementNone: 'None listed by Google',
-    upcomingNote: "Google lists this as the earliest possible shutdown date and confirms the exact date in advance.",
     noun: 'Gemini API model',
   },
 };
@@ -104,6 +111,15 @@ export function matchProviderModel(token: string, index: ProviderIndex): Provide
   return hit ? { token: id, entry: hit.entry, alias: hit.alias } : undefined;
 }
 
+/** For replacement notes: the date of a listed model; Gemini table-only dates are marked tentative, redirected IDs skipped. */
+export function providerLookup(index: ProviderIndex): ReplacementLookup {
+  return (id) => {
+    const entry = index.exact.get(id)?.entry;
+    if (!entry || entry.redirectsTo) return undefined;
+    return { shutdownDate: entry.shutdownDate, replacement: entry.replacement, tentative: entry.dateStatus === 'earliest' };
+  };
+}
+
 type Strategy = { kind: 'http' | 'llm' | 'code' | 'other'; where: string; warning?: string };
 
 /** The literal host of an HTTP Request node's url, or whether credentials/URL text say it calls the provider. */
@@ -115,32 +131,33 @@ function isProviderHttpNode(node: WorkflowNode, spec: ProviderSpec): boolean {
   return node.credentials?.[spec.credential] !== undefined || (typeof url === 'string' && url.includes(spec.host));
 }
 
-/** A base URL that sends the provider node's requests somewhere other than the provider's own API. */
-function customBaseUrl(node: WorkflowNode, spec: ProviderSpec): string | undefined {
+/** An OpenAI-compatible node (e.g. the OpenAI Chat Model) whose options.baseURL points at the provider's own API. */
+function compatibleBaseUrlHost(node: WorkflowNode): string | undefined {
   const options = node.parameters?.options;
-  if (typeof options !== 'object' || options === null) return undefined;
-  const o = options as Record<string, unknown>;
-  const base = [o.baseURL, o.baseUrl, o.apiUrl].find((v): v is string => typeof v === 'string' && v.trim() !== '');
-  return base !== undefined && urlHost(base) !== spec.host ? base : undefined;
+  const baseURL = typeof options === 'object' && options !== null ? (options as Record<string, unknown>).baseURL : undefined;
+  return typeof baseURL === 'string' ? urlHost(baseURL) : undefined;
 }
 
 function strategyFor(node: WorkflowNode, spec: ProviderSpec): Strategy | null {
   if (node.type === STICKY_NOTE) return null;
-  if (CODE_TYPES.has(node.type)) return { kind: 'code', where: 'Code node source' };
+  if (CODE_TYPES.has(node.type)) {
+    const source = [...stringLeaves(node.parameters)].map((leaf) => leaf.value).join('\n');
+    // The same model IDs are served by Vertex AI / Bedrock on their own schedules.
+    if (spec.foreignCode.test(source) && !source.includes(spec.host)) {
+      return {
+        kind: 'code',
+        where: 'Code node source',
+        warning: `This Code node calls ${spec.foreignName}, which sets its own retirement dates, so ${spec.providerName}'s date may not apply. Check where the request goes.`,
+      };
+    }
+    return { kind: 'code', where: 'Code node source' };
+  }
   if (isProviderHttpNode(node, spec)) return { kind: 'http', where: `HTTP Request to ${spec.host}` };
   if (HTTP_TYPES.has(node.type)) return null; // an HTTP request to some other host
-  // Bedrock, Vertex AI and Azure resell the models under their own IDs and retirement schedules.
   if (spec.skipNode.test(node.type)) return null;
-  if (spec.ownNode.test(node.type) || node.credentials?.[spec.credential] !== undefined) {
-    const base = customBaseUrl(node, spec);
-    return base
-      ? {
-          kind: 'llm',
-          where: spec.nodeLabel,
-          warning: `This node sends requests to ${base}, not ${spec.host}, so the model may be served by another provider on its own schedule.`,
-        }
-      : { kind: 'llm', where: spec.nodeLabel };
-  }
+  if (compatibleBaseUrlHost(node) === spec.host) return { kind: 'llm', where: `node calling ${spec.host} through options.baseURL` };
+  // The provider's own nodes. A gateway set in the credential (Anthropic "url", Gemini "host") is not in the workflow JSON.
+  if (spec.ownNode.test(node.type) || node.credentials?.[spec.credential] !== undefined) return { kind: 'llm', where: spec.nodeLabel };
   return {
     kind: 'other',
     where: 'parameter named "model"',
@@ -151,6 +168,7 @@ function strategyFor(node: WorkflowNode, spec: ProviderSpec): Strategy | null {
 // An optional "models/" prefix, as in "models/gemini-2.5-flash"; ":generateContent"-style suffixes stay in the token.
 const TOKEN = /(?:models\/)?[A-Za-z0-9][A-Za-z0-9._:-]*/g;
 const QUOTES = new Set(['"', "'", '`']);
+const URL_IN_TEXT = /https?:\/\/[^\s'"`]+/g;
 
 /** Tokens wrapped in quotes, with the Gemini "models/" prefix kept, e.g. 'models/gemini-2.5-flash' in code. */
 function quotedModelTokens(text: string): string[] {
@@ -163,8 +181,13 @@ function quotedModelTokens(text: string): string[] {
   return out;
 }
 
+/** Path segments of URLs on the provider's host inside code, e.g. '.../v1beta/models/gemini-2.0-flash:generateContent'. */
+function urlTokensInCode(text: string, host: string): string[] {
+  return [...text.matchAll(URL_IN_TEXT)].filter((m) => urlHost(m[0]) === host).flatMap((m) => urlSegments(m[0]));
+}
+
 /** Same rules as the OpenAI checks: free text only counts when quoted, model-named fields count as a whole. */
-function candidates(leaf: StringLeaf, kind: Strategy['kind']): string[] {
+function candidates(leaf: StringLeaf, kind: Strategy['kind'], spec: ProviderSpec): string[] {
   switch (kind) {
     case 'http': {
       const root = rootKey(leaf);
@@ -175,8 +198,12 @@ function candidates(leaf: StringLeaf, kind: Strategy['kind']): string[] {
     }
     case 'llm':
       return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedModelTokens(leaf.value)] : [];
-    case 'code':
-      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...quotedModelTokens(leaf.value)] : quotedModelTokens(leaf.value);
+    case 'code': {
+      // Comments don't run: `// was 'claude-2.1'` must not keep a migrated workflow failing.
+      const code = stripComments(leaf.value, codeLanguage(leaf.key));
+      const tokens = [...quotedModelTokens(code), ...urlTokensInCode(code, spec.host)];
+      return isModelNamed(leaf) ? [wholeValue(leaf.value), ...tokens] : tokens;
+    }
     case 'other':
       return isModelNamed(leaf) ? [wholeValue(leaf.value)] : [];
   }
@@ -186,45 +213,94 @@ function describe(match: ProviderMatch): string {
   return match.alias ? `"${match.token}" (alias of ${match.entry.id})` : `"${match.token}"`;
 }
 
-export function checkProviderModels(node: WorkflowNode, registry: Registry, index: ProviderIndex, asOf: string): RuleFinding[] {
+export interface ProviderFindingOptions {
+  /** Makes the finding a warning (may break, never fails the run). */
+  warning?: string;
+  /** Extra reason the finding is unverified, e.g. that the model comes from an n8n default. */
+  unverifiedNote?: string;
+  replacement?: string;
+  extraSources?: string[];
+}
+
+/** One finding for a matched model; also used for models that n8n nodes use by default. */
+export function providerFinding(
+  registry: Registry,
+  index: ProviderIndex,
+  match: ProviderMatch,
+  locations: string[],
+  asOf: string,
+  windowDays: number,
+  options: ProviderFindingOptions = {},
+): RuleFinding {
+  const { spec } = index;
+  const { entry } = match;
+  const date = entry.shutdownDate;
+  const past = date <= asOf;
+  const noun = entry.noun ?? spec.noun;
+  const name = describe(match);
+  const notes: string[] = [];
+  if (options.warning) notes.push(options.warning);
+  if (options.unverifiedNote) notes.push(options.unverifiedNote);
+  if (match.alias) notes.push(entry.aliasNote ?? 'Matched by an alias; no page says when an alias stops working, so it is assumed to retire with its model.');
+  if (entry.verification === 'unverified' && entry.verificationNote) notes.push(entry.verificationNote);
+
+  let severity: Severity = options.warning ? 'warning' : 'breaking';
+  let message: string;
+  if (entry.redirectsTo && past) {
+    // The old model is gone, but the ID still answers with another model: a behavior change, not a failure.
+    if (!options.warning) severity = 'behavior-change';
+    message = `${spec.providerName} shut down the model behind ${noun} ${name}; the ID now points to ${entry.redirectsTo}, so calls still work but get a different model.`;
+  } else if (entry.dateStatus === 'earliest' && past) {
+    // Nothing confirms the shutdown; only the earliest possible date has passed.
+    severity = 'warning';
+    message = `${noun[0]!.toUpperCase()}${noun.slice(1)} ${name} is past ${spec.providerName}'s earliest shutdown date (${date}); calls may already fail.`;
+    notes.push(`The release notes neither announce nor confirm this shutdown; the deprecations table lists ${date} as the earliest possible date.`);
+  } else if (entry.dateStatus === 'earliest') {
+    message = `${spec.providerName} lists ${date} as the earliest shutdown date for ${noun} ${name}; calls can fail from ${date} at the earliest.`;
+  } else {
+    message = past ? `${spec.shutdownVerb.past} ${noun} ${name}; API calls fail.` : `${spec.shutdownVerb.upcoming} ${noun} ${name}; API calls will fail.`;
+  }
+
+  const listed = options.replacement ?? entry.replacement;
+  const replacement = listed ? annotateReplacement(listed, providerLookup(index), asOf, windowDays) : spec.replacementNone;
+  return {
+    category: spec.category,
+    ruleId: spec.ruleId,
+    severity,
+    message,
+    trigger: { kind: 'date', date },
+    replacement,
+    verification: notes.length ? 'unverified' : 'verified',
+    ...(notes.length ? { verificationNote: notes.join(' ') } : {}),
+    sources: sourceUrls(registry, [...new Set([...entry.sources, ...(match.alias ? (entry.aliasSources ?? []) : []), ...(options.extraSources ?? [])])]),
+    model: match.token,
+    locations,
+  };
+}
+
+export function checkProviderModels(node: WorkflowNode, registry: Registry, index: ProviderIndex, asOf: string, windowDays = 30): RuleFinding[] {
   if (index.exact.size === 0) return [];
   const { spec } = index;
   const strategy = strategyFor(node, spec);
   if (!strategy) return [];
 
+  // One finding per registry entry, even when the node names it twice ("models/x" in the URL and "x" in the body,
+  // or an alias and its model): the direct ID wins over an alias.
   const matches = new Map<string, { match: ProviderMatch; paths: string[] }>();
   for (const leaf of stringLeaves(node.parameters)) {
-    for (const token of new Set(candidates(leaf, strategy.kind))) {
+    for (const token of new Set(candidates(leaf, strategy.kind, spec))) {
       const match = matchProviderModel(token, index);
       if (!match) continue;
-      // One finding per model, even when the node names it twice ("models/x" in the URL, "x" in the body).
-      const seen = matches.get(match.token);
-      if (seen) {
+      const seen = matches.get(match.entry.id);
+      if (!seen) matches.set(match.entry.id, { match, paths: [leaf.path] });
+      else {
+        if (seen.match.alias && !match.alias) seen.match = match;
         if (!seen.paths.includes(leaf.path)) seen.paths.push(leaf.path);
-      } else matches.set(match.token, { match, paths: [leaf.path] });
+      }
     }
   }
 
-  return [...matches.values()].map(({ match, paths }) => {
-    const { entry } = match;
-    const past = entry.shutdownDate <= asOf;
-    const unverifiedNote = strategy.warning ?? (entry.verification === 'unverified' ? entry.verificationNote : undefined);
-    const severity: Severity = strategy.warning ? 'warning' : 'breaking';
-    const verb = past ? spec.shutdownVerb.past : spec.shutdownVerb.upcoming;
-    const tail = past ? 'API calls fail.' : 'API calls will fail.';
-    const note = !past && spec.upcomingNote ? ` ${spec.upcomingNote}` : '';
-    return {
-      category: spec.category,
-      ruleId: spec.ruleId,
-      severity,
-      message: `${verb} ${spec.noun} ${describe(match)}; ${tail}${note}`,
-      trigger: { kind: 'date', date: entry.shutdownDate },
-      replacement: entry.replacement ?? spec.replacementNone,
-      verification: unverifiedNote ? 'unverified' : 'verified',
-      ...(unverifiedNote ? { verificationNote: unverifiedNote } : {}),
-      sources: sourceUrls(registry, [...entry.sources, ...(match.alias ? (entry.aliasSources ?? []) : [])]),
-      model: match.token,
-      locations: paths.map((path) => `${strategy.where}: ${path}`),
-    } satisfies RuleFinding;
-  });
+  return [...matches.values()].map(({ match, paths }) =>
+    providerFinding(registry, index, match, paths.map((path) => `${strategy.where}: ${path}`), asOf, windowDays, strategy.warning ? { warning: strategy.warning } : {}),
+  );
 }

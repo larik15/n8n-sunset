@@ -82,7 +82,8 @@ describe('table output', () => {
   });
 
   it('marks disabled nodes and archived or inactive workflows', () => {
-    expect(stdout).toContain('(disabled, not counted)');
+    // The marker may wrap between its words inside the NODE column.
+    expect(stdout).toMatch(/\(disabled, not( counted\)|\s*\n[^\n]*counted\))/);
     expect(stdout).toContain('(archived)');
   });
 
@@ -236,11 +237,11 @@ describe('normalizeTarget', () => {
 describe('registry age and --registry', () => {
   const target = fixture('rules/clean.json');
 
-  it('warns when the registry is more than 30 days older than --as-of', async () => {
-    expect((await run([target, '--as-of', '2026-10-31'])).stderr).toBe('');
-    const old = await run([target, '--as-of', '2026-11-15']);
+  it('warns when the registry is more than 14 days older than --as-of', async () => {
+    expect((await run([target, '--as-of', '2026-10-20'])).stderr).toBe('');
+    const old = await run([target, '--as-of', '2026-10-21']);
     expect(old.code).toBe(EXIT_OK);
-    expect(old.stderr).toContain('the bundled registry is from 2026-10-06, 40 days before 2026-11-15');
+    expect(old.stderr).toContain('the bundled registry is from 2026-10-06, 15 days before 2026-10-21');
     expect(old.stderr).toContain('Update n8n-sunset.');
   });
 
@@ -477,5 +478,64 @@ describe('usage errors', () => {
     const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
     expect(version).toBe('0.2.0');
     expect(await run(['--version'])).toMatchObject({ code: EXIT_OK, stdout: `${version}\n` });
+  });
+});
+
+describe('--skip-rule', () => {
+  const gemini = fixture('rules/gemini-nodes.json');
+
+  it('leaves out a rule by ID, which can turn a failing run green, and says so in the header and the JSON', async () => {
+    expect((await run([gemini, '--as-of', '2026-10-06'])).code).toBe(EXIT_BREAKING);
+    const skipped = await run([gemini, '--as-of', '2026-10-06', '--skip-rule', 'gemini/model-shutdown']);
+    expect(skipped.code).toBe(EXIT_OK);
+    expect(skipped.stdout).toContain('skipping gemini/model-shutdown');
+    expect(skipped.stdout).not.toContain('Gemini API model');
+    const { report } = await json([gemini, '--as-of', '2026-10-06', '--skip-rule', 'gemini-model', '--skip-rule', 'gemini-model']);
+    expect(report.skipRules).toEqual(['gemini-model']);
+    expect(report.findings).toEqual([]);
+  });
+
+  it('accepts categories and keeps the other rules', async () => {
+    const { report } = await json([fixture('rules/anthropic-review-fixes.json'), '--as-of', '2026-10-06', '--skip-rule', 'anthropic-model']);
+    expect(report.findings.every((f: { category: string }) => f.category !== 'anthropic-model')).toBe(true);
+  });
+
+  it('rejects an unknown rule and lists the valid ones', async () => {
+    const bad = await run([gemini, '--skip-rule', 'gemini']);
+    expect(bad.code).toBe(EXIT_ERROR);
+    expect(bad.stderr).toContain('--skip-rule does not know "gemini"');
+    expect(bad.stderr).toContain('gemini/model-shutdown');
+    expect(bad.stderr).toContain('n8n3/removed-node');
+  });
+});
+
+describe('a registry file from 0.1.x', () => {
+  it('warns that Anthropic and Gemini are not checked and leaves them out of the footer', async () => {
+    const dir = tempDir();
+    try {
+      const old = JSON.parse(readFileSync(new URL('../data/sunset-registry.json', import.meta.url), 'utf8'));
+      delete old.anthropic;
+      delete old.gemini;
+      delete old.modelDefaults;
+      const file = join(dir, 'old-registry.json');
+      writeFileSync(file, JSON.stringify(old));
+      const result = await run([fixture('rules/gemini-nodes.json'), '--as-of', '2026-10-06', '--registry', file]);
+      expect(result.stderr).toContain('the registry has no anthropic section (it was written for n8n-sunset 0.1), so Anthropic models are not checked.');
+      expect(result.stderr).toContain('the registry has no gemini section');
+      expect(result.stdout).not.toContain('(Anthropic)');
+      expect(result.stdout).not.toContain('(Google Gemini)');
+      expect(result.code).toBe(EXIT_OK);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('table wrapping', () => {
+  it('never splits a model ID or a host name across lines when the terminal is wide enough', async () => {
+    const { stdout } = await run([fixture('rules/gemini-http-code.json'), fixture('rules/anthropic-llm-nodes.json'), '--as-of', '2026-10-06'], { columns: 100 });
+    expect(stdout).toContain('generativelanguage.googleapis.com');
+    expect(stdout).toContain('"claude-3-5-sonnet-20241022";');
+    expect(stdout).not.toMatch(/generativelanguage\.googleap\s*\n/);
   });
 });
