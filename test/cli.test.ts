@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXIT_BREAKING, EXIT_ERROR, EXIT_OK, main, normalizeTarget } from '../src/cli.js';
 import { displayWidth } from '../src/width.js';
-import { AS_OF, fixture } from './helpers.js';
+import { AS_OF, fixture, PROVIDERS_AS_OF } from './helpers.js';
 
 const ANSI = /\u001b\[[0-9;]*m/g;
 
@@ -40,7 +40,8 @@ const tempDir = () => mkdtempSync(join(tmpdir(), 'n8n-sunset-'));
 describe('table output', () => {
   let code: number;
   let stdout: string;
-  beforeAll(async () => ({ code, stdout } = await run([fixture('rules'), '--as-of', AS_OF])));
+  // Wide enough for the longest word in the rules fixtures (a 59-character env var setting), so the table is used.
+  beforeAll(async () => ({ code, stdout } = await run([fixture('rules'), '--as-of', AS_OF], { columns: 200 })));
 
   it('exits 1 when an OpenAI shutdown takes effect within 30 days or already has', () => {
     expect(code).toBe(EXIT_BREAKING);
@@ -56,7 +57,7 @@ describe('table output', () => {
 
   it('lists upcoming shutdowns first, then past ones, then n8n 3.0 upgrade changes', () => {
     const upcoming = stdout.indexOf('Upcoming shutdowns (');
-    const past = stdout.indexOf('Already shut down (');
+    const past = stdout.indexOf('Past shutdown dates (');
     const upgrade = stdout.indexOf('Breaks on upgrade to n8n 3.0 (');
     expect(upcoming).toBeGreaterThan(-1);
     expect(past).toBeGreaterThan(upcoming);
@@ -115,6 +116,26 @@ describe('table output', () => {
       'as of 2026-10-01 (UTC)  ·  window 30 days',
       'target n8n 3.0',
     ]);
+  });
+
+  it('never splits a word longer than its column: the column widens, or the output switches to blocks', async () => {
+    const id = 'gemini-2.5-flash-exp-native-audio-thinking-dialog';
+    const replacement = 'gemini-2.5-flash-native-audio-preview-09-2025'; // longer than the replacement column's 44
+    const wide = (await run([fixture('cli/long-model-id.json'), '--as-of', PROVIDERS_AS_OF], { columns: 160 })).stdout;
+    expect(wide).toContain('SEVERITY');
+    expect(wide).toContain(`"${id}"`);
+    expect(wide).toContain(replacement);
+    for (const width of [90, 100, 120]) {
+      const out = (await run([fixture('cli/long-model-id.json'), '--as-of', PROVIDERS_AS_OF], { columns: width })).stdout;
+      expect(out, `${width} columns`).toContain(`"${id}"`);
+      expect(out, `${width} columns`).toContain(replacement);
+      for (const line of out.split('\n')) expect(displayWidth(line), line).toBeLessThanOrEqual(width);
+    }
+    // The rules fixtures have a 59-character env var setting as a replacement: no width splits it either.
+    for (const width of [100, 160, 200]) {
+      const out = (await run([fixture('rules'), '--as-of', AS_OF], { columns: width })).stdout;
+      expect(out, `${width} columns`).toContain('N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES=2147483648');
+    }
   });
 
   it('aligns columns by display width when names contain emoji or CJK', async () => {
@@ -241,7 +262,7 @@ describe('registry age and --registry', () => {
     expect((await run([target, '--as-of', '2026-10-20'])).stderr).toBe('');
     const old = await run([target, '--as-of', '2026-10-21']);
     expect(old.code).toBe(EXIT_OK);
-    expect(old.stderr).toContain('the bundled registry is from 2026-10-06, 15 days before 2026-10-21');
+    expect(old.stderr).toContain('registry data from 2026-10-06 (15 days old); newer shutdowns may be missing.');
     expect(old.stderr).toContain('Update n8n-sunset.');
   });
 
@@ -506,6 +527,35 @@ describe('--skip-rule', () => {
     expect(bad.stderr).toContain('--skip-rule does not know "gemini"');
     expect(bad.stderr).toContain('gemini/model-shutdown');
     expect(bad.stderr).toContain('n8n3/removed-node');
+  });
+});
+
+describe('--ignore-model', () => {
+  const map = fixture('cli/migration-map.json');
+
+  it('leaves out one model wherever it is found and keeps the rest of the rule, saying so in the header and the JSON', async () => {
+    const all = await json([map, '--as-of', '2026-10-06']);
+    expect(all.report.findings.map((f: { model: string }) => f.model).sort()).toEqual(['claude-2.1', 'gemini-1.5-flash']);
+    const ignored = await run([map, '--as-of', '2026-10-06', '--ignore-model', 'claude-2.1']);
+    expect(ignored.stdout).toContain('ignoring model claude-2.1');
+    expect(ignored.stdout).not.toContain('"claude-2.1"');
+    expect(ignored.stdout).toContain('"gemini-1.5-flash"');
+    expect(ignored.code).toBe(EXIT_BREAKING);
+    // The "models/" prefix n8n's Gemini nodes store is accepted too; duplicates collapse.
+    const { report, code } = await json([map, '--as-of', '2026-10-06', '--ignore-model', 'claude-2.1', '--ignore-model', 'models/gemini-1.5-flash', '--ignore-model', 'claude-2.1']);
+    expect(report.ignoreModels).toEqual(['claude-2.1', 'gemini-1.5-flash']);
+    expect(report.skipRules).toEqual([]);
+    expect(report.findings).toEqual([]);
+    expect(code).toBe(EXIT_OK);
+  });
+
+  it('warns about an ID the registry does not list, and rejects an empty one', async () => {
+    const typo = await run([map, '--as-of', '2026-10-06', '--ignore-model', 'claude-2.l']);
+    expect(typo.stderr).toContain('--ignore-model claude-2.l: no registry entry has this ID');
+    expect(typo.stdout).toContain('"claude-2.1"');
+    const empty = await run([map, '--ignore-model', ' ']);
+    expect(empty.code).toBe(EXIT_ERROR);
+    expect(empty.stderr).toContain('--ignore-model needs a model ID');
   });
 });
 

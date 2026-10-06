@@ -1,0 +1,25 @@
+{
+  "id": "wf-migration-map",
+  "name": "Model router",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const renamed = { 'claude-2.1': 'claude-opus-4-8' };\nreturn items.map((item) => ({ json: { ...item.json, model: renamed[item.json.model] ?? item.json.model } }));"
+      },
+      "id": "1",
+      "name": "Rename models",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": { "modelName": "models/gemini-1.5-flash", "options": {} },
+      "id": "2",
+      "name": "Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [200, 0]
+    }
+  ],
+  "connections": {}
+}

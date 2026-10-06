@@ -71,12 +71,13 @@
       "position": [1400, 0]
     },
     {
-      "parameters": { "modelName": "models/gemini-2.0-flash-exp", "options": { "baseURL": "https://gateway.example.com/gemini" } },
+      "parameters": { "modelName": "models/gemini-2.0-flash-exp" },
       "id": "9",
       "name": "Behind a gateway",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1600, 0]
+      "position": [1600, 0],
+      "credentials": { "googlePalmApi": { "id": "9", "name": "Company AI gateway" } }
     },
     {
       "parameters": { "modelName": "models/gemini-3-pro-preview" },

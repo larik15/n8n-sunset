@@ -245,13 +245,33 @@ describe('replacement chains', () => {
         if (!m.replacement) continue;
         const named = [...new Set(m.replacement.match(/[A-Za-z0-9][A-Za-z0-9._:-]*[A-Za-z0-9]/g) ?? [])].filter((t) => lookup(t));
         for (const id of named) {
-          for (const next of resolveSuccessors(id, lookup, asOf, 30)) {
+          const successors = resolveSuccessors(id, lookup, asOf, 30);
+          // [] is a dead end (the chain runs out, or loops back on itself): the finding would say "no further replacement".
+          expect(successors, `${name} ${m.id} -> ${id} is a dead end`).not.toEqual([]);
+          for (const next of successors) {
             const info = lookup(next);
             expect(info === undefined || daysBetween(asOf, info.shutdownDate) > 30, `${name} ${m.id} -> ${id} -> ${next}`).toBe(true);
           }
         }
       }
     }
+  });
+
+  it('returns [] for a dead end and for a cycle, instead of a model that is gone', () => {
+    const table: Record<string, { shutdownDate: string; replacement: string | null }> = {
+      'old-1': { shutdownDate: '2026-01-01', replacement: 'old-2' },
+      'old-2': { shutdownDate: '2026-02-01', replacement: null }, // dead end: gone, nothing listed
+      'loop-1': { shutdownDate: '2026-01-01', replacement: 'loop-2' },
+      'loop-2': { shutdownDate: '2026-01-01', replacement: 'loop-1' }, // cycle
+      'fork-1': { shutdownDate: '2026-01-01', replacement: 'loop-1 or live-1' },
+      'live-1': { shutdownDate: '2027-06-01', replacement: null },
+    };
+    const lookup: ReplacementLookup = (id) => table[id];
+    expect(resolveSuccessors('old-1', lookup, asOf, 30)).toEqual([]);
+    expect(resolveSuccessors('loop-1', lookup, asOf, 30)).toEqual([]);
+    expect(resolveSuccessors('loop-2', lookup, asOf, 30)).toEqual([]);
+    // A cycle on one branch doesn't hide the other.
+    expect(resolveSuccessors('fork-1', lookup, asOf, 30)).toEqual(['live-1']);
   });
 
   it('follows the chains the review found', () => {
@@ -270,7 +290,8 @@ describe('model defaults', () => {
   it('names a listed model, a node type, a version range, and an n8n source pinned to a commit for every rule', () => {
     expect(registry.modelDefaults.map((d) => d.id)).toEqual([
       'anthropic-chat-model-v1', 'anthropic-chat-model-v1.1', 'anthropic-chat-model-v1.2', 'anthropic-chat-model-v1.3',
-      'openai-audio-generate', 'openai-audio-transcribe', 'openai-audio-translate', 'gemini-image-generate',
+      'openai-audio-generate', 'openai-audio-transcribe', 'openai-audio-translate', 'openai-image-generate', 'openai-image-generate-v2.2',
+      'gemini-image-generate', 'gemini-image-edit',
     ]);
     for (const d of registry.modelDefaults) {
       const match = d.provider === 'openai' ? matchModelId(d.model, openai) : matchProviderModel(d.model, d.provider === 'anthropic' ? anthropic : gemini);

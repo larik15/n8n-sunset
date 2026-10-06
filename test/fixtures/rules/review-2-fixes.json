@@ -1,0 +1,242 @@
+{
+  "id": "wf-review-2-fixes",
+  "name": "Second review fixes",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "A cat"
+      },
+      "id": "1",
+      "name": "OpenAI image, untouched (1.8)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "",
+        "prompt": "A cat"
+      },
+      "id": "2",
+      "name": "OpenAI image, model emptied (2.1)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "generate",
+        "prompt": "A cat"
+      },
+      "id": "3",
+      "name": "OpenAI image, untouched (2.2)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "prompt": "A cat"
+      },
+      "id": "4",
+      "name": "OpenAI image, empty locator (2.3)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-image-2",
+          "mode": "list"
+        },
+        "prompt": "A cat"
+      },
+      "id": "5",
+      "name": "OpenAI image, model set (2.3)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "edit",
+        "prompt": "Make it blue"
+      },
+      "id": "6",
+      "name": "Gemini image edit, untouched (1)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "edit",
+        "modelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "prompt": "Make it blue"
+      },
+      "id": "7",
+      "name": "Gemini image edit, empty locator (1.2)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "edit",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-image",
+          "mode": "list"
+        },
+        "prompt": "Make it blue"
+      },
+      "id": "8",
+      "name": "Gemini image edit, model set (1.2)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9",
+      "name": "Anthropic Chat Model 1, untouched",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "10",
+      "name": "Anthropic Chat Model 1.3, empty locator",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: move this to Bedrock later (was: new AnthropicBedrock())\nconst bedrockFallback = false;\nconst client = new Anthropic({ apiKey: $env.ANTHROPIC_KEY });\nconst msg = await client.messages.create({ model: 'claude-2.1', max_tokens: 100, messages: [] });\nreturn [{ json: { msg, bedrockFallback } }];"
+      },
+      "id": "11",
+      "name": "Anthropic SDK, Bedrock only mentioned",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const client = new AnthropicBedrock({ awsRegion: 'us-east-1' });\nconst msg = await client.messages.create({ model: 'claude-2.1', max_tokens: 100, messages: [] });\nreturn [{ json: { msg } }];"
+      },
+      "id": "12",
+      "name": "Anthropic on Bedrock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "# client = genai.Client(vertexai=True, project='p')\nclient = genai.Client(api_key=key)\nresult = client.models.generate_content(model='gemini-2.0-flash', contents='hi')\nreturn [{'json': {'text': result.text}}]"
+      },
+      "id": "13",
+      "name": "Gemini SDK, Vertex only in a comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "client = genai.Client(vertexai=True, project='p', location='us-central1')\nresult = client.models.generate_content(model='gemini-2.0-flash', contents='hi')\nreturn [{'json': {'text': result.text}}]"
+      },
+      "id": "14",
+      "name": "Gemini SDK on Vertex",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// migrated from: await fetch('https://api.openai.com/v1/assistants', { method: 'POST' })\nconst res = await fetch('https://api.openai.com/v1/responses', { method: 'POST' });\nreturn [{ json: await res.json() }];"
+      },
+      "id": "15",
+      "name": "Assistants call only in a comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        800
+      ]
+    }
+  ],
+  "connections": {}
+}

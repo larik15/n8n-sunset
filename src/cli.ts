@@ -7,7 +7,7 @@ import { loadWorkflowsFromApi } from './api.js';
 import { daysBetween, isIsoDay, utcToday } from './dates.js';
 import { loadRegistry, missingProviderSections, type Registry } from './registry.js';
 import { makeColors, renderTable, toJsonReport } from './report.js';
-import { scanWorkflows } from './scan.js';
+import { normalizeModelId, scanWorkflows } from './scan.js';
 import { loadWorkflows, type LoadResult } from './workflows.js';
 
 export const EXIT_OK = 0;
@@ -44,6 +44,8 @@ Options:
                               version (3.0, or 3)
   --skip-rule <id>            Leave out findings of this rule (e.g. gemini/model-shutdown)
                               or category (e.g. gemini-model); repeat for more
+  --ignore-model <id>         Leave out findings for this model ID as the workflow
+                              writes it (e.g. claude-2.1); repeat for more
   --allow-skipped             Don't exit 2 for files that aren't readable n8n workflows,
                               or for symbolic links (which are never followed)
   --max-registry-age <days>   Exit 2 when the bundled data is older than this many days
@@ -118,6 +120,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         'as-of': { type: 'string' },
         target: { type: 'string', multiple: true },
         'skip-rule': { type: 'string', multiple: true },
+        'ignore-model': { type: 'string', multiple: true },
         'allow-skipped': { type: 'boolean', default: false },
         'from-api': { type: 'boolean', default: false },
         'max-registry-age': { type: 'string', default: String(REGISTRY_MAX_AGE_DAYS) },
@@ -167,6 +170,12 @@ export async function main(argv: string[], io: Io): Promise<number> {
     if (!known.includes(rule)) return fail(`--skip-rule does not know "${raw}". Rule IDs and categories: ${known.join(', ')}`);
     if (!skipRules.includes(rule)) skipRules.push(rule);
   }
+  const ignoreModels: string[] = [];
+  for (const raw of values['ignore-model'] ?? []) {
+    const id = normalizeModelId(raw);
+    if (!id) return fail('--ignore-model needs a model ID');
+    if (!ignoreModels.includes(id)) ignoreModels.push(id);
+  }
   const age = daysBetween(registry.registryVersion, asOf);
   const maxAge = Number(values['max-registry-age']);
   if (age > maxAge) {
@@ -195,7 +204,12 @@ export async function main(argv: string[], io: Io): Promise<number> {
 
   const warnings: string[] = [];
   if (age > REGISTRY_WARN_AGE_DAYS) {
-    warnings.push(`the bundled registry is from ${registry.registryVersion}, ${age} days before ${asOf}; newer shutdowns may be missing. Update n8n-sunset.`);
+    warnings.push(`registry data from ${registry.registryVersion} (${age} days old); newer shutdowns may be missing. Update n8n-sunset.`);
+  }
+  // A typo would silently ignore nothing; IDs outside the registry (fine-tuned models) are still accepted.
+  const listed = registryModelIds(registry);
+  for (const id of ignoreModels) {
+    if (!listed.has(id)) warnings.push(`--ignore-model ${id}: no registry entry has this ID, so it may never match a finding.`);
   }
   for (const section of missingProviderSections(registry)) {
     warnings.push(`the registry has no ${section} section (it was written for n8n-sunset 0.1), so ${section === 'anthropic' ? 'Anthropic' : 'Google Gemini'} models are not checked.`);
@@ -203,7 +217,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
   for (const { file, message: text } of load.errors) warnings.push(`could not parse ${file}: ${text}`);
   for (const { file, reason } of load.skipped) warnings.push(`skipped ${file}: ${reason}`);
 
-  const result = scanWorkflows(load.workflows, registry, { asOf, windowDays: Number(values.days), targets, skipRules });
+  const result = scanWorkflows(load.workflows, registry, { asOf, windowDays: Number(values.days), targets, skipRules, ignoreModels });
   const failedFiles = load.errors.length + load.skipped.length;
   const exitCode =
     load.workflows.length === 0 || (failedFiles > 0 && !values['allow-skipped'])
@@ -227,6 +241,12 @@ export async function main(argv: string[], io: Io): Promise<number> {
     );
   }
   return exitCode;
+}
+
+/** Every model ID and alias in the registry, for checking --ignore-model values. */
+function registryModelIds(registry: Registry): Set<string> {
+  const models = [...registry.openai.models, ...registry.anthropic.models, ...registry.gemini.models];
+  return new Set(models.flatMap((m) => [m.id, ...(m.aliases ?? [])]));
 }
 
 /** Every value --skip-rule accepts: the rule IDs the registry can produce, and the finding categories. */

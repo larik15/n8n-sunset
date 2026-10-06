@@ -17,6 +17,8 @@ export interface ScanOptions {
   targets?: string[];
   /** Rule IDs (e.g. "gemini/model-shutdown") or categories (e.g. "gemini-model") whose findings are left out. */
   skipRules?: string[];
+  /** Model IDs whose model findings are left out, e.g. old IDs kept on purpose in a Code node's migration map. */
+  ignoreModels?: string[];
 }
 
 export interface ScanSummary {
@@ -71,12 +73,19 @@ function compareFindings(a: Finding, b: Finding): number {
   );
 }
 
+/** Findings name a Gemini model without the "models/" prefix that n8n's Gemini nodes store, so accept it either way. */
+export function normalizeModelId(id: string): string {
+  const trimmed = id.trim();
+  return trimmed.startsWith('models/') ? trimmed.slice('models/'.length) : trimmed;
+}
+
 export function scanWorkflows(workflows: Workflow[], registry: Registry, options: ScanOptions): ScanResult {
   const targets = options.targets ?? [];
   const index = buildModelIndex(registry.openai.models, registry.openai.legacyFineTunes);
   const anthropic = buildProviderIndex('anthropic', registry.anthropic.models);
   const gemini = buildProviderIndex('gemini', registry.gemini.models);
   const skip = new Set(options.skipRules ?? []);
+  const ignore = new Set((options.ignoreModels ?? []).map(normalizeModelId));
   const { windowDays } = options;
   const findings: Finding[] = [];
 
@@ -89,7 +98,7 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
         ...checkProviderModels(node, registry, anthropic, options.asOf, windowDays),
         ...checkProviderModels(node, registry, gemini, options.asOf, windowDays),
         ...checkModelDefaults(node, registry, { openai: index, anthropic, gemini }, options.asOf, windowDays),
-      ].filter((f) => !skip.has(f.ruleId) && !skip.has(f.category));
+      ].filter((f) => !skip.has(f.ruleId) && !skip.has(f.category) && !(f.model !== undefined && ignore.has(f.model)));
       const override = replacementOverride(registry, node);
       if (override) for (const f of ruleFindings) if (f.category === override.category && f.model) f.replacement = override.text;
       for (const { trigger, ...f } of ruleFindings) {
@@ -132,6 +141,7 @@ export function scanWorkflows(workflows: Workflow[], registry: Registry, options
     ...options,
     targets,
     skipRules: [...skip],
+    ignoreModels: [...ignore],
     findings,
     summary: {
       workflowsScanned: workflows.length,

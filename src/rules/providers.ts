@@ -50,7 +50,8 @@ const SPECS: Record<ProviderKey, ProviderSpec> = {
     ownNode: /anthropic/i,
     // Anthropic's dates also cover Claude Platform on AWS and Microsoft Foundry; only Bedrock and Google Cloud differ.
     skipNode: /bedrock|vertex/i,
-    foreignCode: /bedrock|aiplatform\.googleapis\.com|AnthropicVertex|AnthropicBedrock|@anthropic-ai\/(vertex|bedrock)-sdk/i,
+    // Client classes, SDK packages and endpoints, not the bare word: a log line or variable name that says "bedrock" is no call.
+    foreignCode: /\bAnthropicBedrock\b|\bbedrock-runtime\b|@anthropic-ai\/bedrock-sdk|\bAnthropicVertex\b|@anthropic-ai\/vertex-sdk|aiplatform\.googleapis\.com/,
     foreignName: 'Amazon Bedrock or Google Cloud Vertex AI',
     nodeLabel: 'Anthropic node parameter',
     ownNodePhrase: 'an Anthropic node',
@@ -67,7 +68,8 @@ const SPECS: Record<ProviderKey, ProviderSpec> = {
     credential: 'googlePalmApi',
     ownNode: /googleGemini/i,
     skipNode: /vertex|bedrock/i,
-    foreignCode: /aiplatform\.googleapis\.com|vertexai\s*[:=]\s*(true|True)|@google-cloud\/vertexai|vertexai\.generative_models|\bVertexAI\b/,
+    // `vertexai: true` (JavaScript) and `vertexai=True` (Python) switch the Google Gen AI SDK to Vertex AI.
+    foreignCode: /aiplatform\.googleapis\.com|\bvertexai\s*[:=]\s*(true|True)\b|@google-cloud\/vertexai|\bvertexai\.generative_models\b|\bVertexAI\b/,
     foreignName: 'Google Cloud Vertex AI',
     nodeLabel: 'Google Gemini node parameter',
     ownNodePhrase: 'a Google Gemini node',
@@ -141,7 +143,8 @@ function compatibleBaseUrlHost(node: WorkflowNode): string | undefined {
 function strategyFor(node: WorkflowNode, spec: ProviderSpec): Strategy | null {
   if (node.type === STICKY_NOTE) return null;
   if (CODE_TYPES.has(node.type)) {
-    const source = [...stringLeaves(node.parameters)].map((leaf) => leaf.value).join('\n');
+    // Commented-out code doesn't call anything, so it can't move the node to another platform.
+    const source = [...stringLeaves(node.parameters)].map((leaf) => stripComments(leaf.value, codeLanguage(leaf.key))).join('\n');
     // The same model IDs are served by Vertex AI / Bedrock on their own schedules.
     if (spec.foreignCode.test(source) && !source.includes(spec.host)) {
       return {
@@ -250,6 +253,7 @@ export function providerFinding(
     // The old model is gone, but the ID still answers with another model: a behavior change, not a failure.
     if (!options.warning) severity = 'behavior-change';
     message = `${spec.providerName} shut down the model behind ${noun} ${name}; the ID now points to ${entry.redirectsTo}, so calls still work but get a different model.`;
+    if (entry.redirectNote) message += ` ${entry.redirectNote}`;
   } else if (entry.dateStatus === 'earliest' && past) {
     // Nothing confirms the shutdown; only the earliest possible date has passed.
     severity = 'warning';
@@ -260,6 +264,9 @@ export function providerFinding(
   } else {
     message = past ? `${spec.shutdownVerb.past} ${noun} ${name}; API calls fail.` : `${spec.shutdownVerb.upcoming} ${noun} ${name}; API calls will fail.`;
   }
+
+  // Facts about the date itself ("2025-09-29 is the date of that notice"), as n8n and endpoint findings show theirs.
+  if (entry.note) message += ` ${entry.note}`;
 
   const listed = options.replacement ?? entry.replacement;
   const replacement = listed ? annotateReplacement(listed, providerLookup(index), asOf, windowDays) : spec.replacementNone;

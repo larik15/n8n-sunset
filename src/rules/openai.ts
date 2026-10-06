@@ -292,9 +292,9 @@ export function openAiModelFinding(
     category: 'openai-model',
     ruleId: 'openai/model-shutdown',
     severity,
-    message: past
-      ? `OpenAI has shut down model ${describe(match)}; API calls fail.`
-      : `OpenAI shuts down model ${describe(match)}; API calls will fail.`,
+    message:
+      (past ? `OpenAI has shut down model ${describe(match)}; API calls fail.` : `OpenAI shuts down model ${describe(match)}; API calls will fail.`) +
+      (entry.note ? ` ${entry.note}` : ''),
     trigger: { kind: 'date', date: entry.shutdownDate },
     replacement: listed ? annotateReplacement(listed, openAiLookup(index), asOf, windowDays) : 'None listed by OpenAI',
     verification: notes.length ? 'unverified' : 'verified',

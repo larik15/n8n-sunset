@@ -1,0 +1,15 @@
+{
+  "id": "wf-long-id",
+  "name": "Voice agent",
+  "nodes": [
+    {
+      "parameters": { "modelName": "models/gemini-2.5-flash-exp-native-audio-thinking-dialog", "options": {} },
+      "id": "1",
+      "name": "Gemini voice",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [0, 0]
+    }
+  ],
+  "connections": {}
+}

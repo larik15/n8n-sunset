@@ -93,7 +93,7 @@
       "id": "11",
       "name": "OpenAI Chat Model pointed at Anthropic",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
+      "typeVersion": 1,
       "position": [2000, 0]
     },
     {

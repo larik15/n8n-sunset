@@ -7,7 +7,7 @@
       "id": "1",
       "name": "Chat model via OpenRouter",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
+      "typeVersion": 1,
       "credentials": { "openAiApi": { "id": "1", "name": "OpenRouter key" } },
       "position": [0, 0]
     },
@@ -16,7 +16,7 @@
       "id": "2",
       "name": "Chat model with explicit OpenAI URL",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
+      "typeVersion": 1,
       "position": [200, 0]
     },
     {

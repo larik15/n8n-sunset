@@ -181,7 +181,9 @@ describe('Google Gemini nodes', () => {
       verification: 'verified',
       sources: [CHANGELOG],
     });
-    expect(finding!.message).toBe('Google has shut down Gemini API model "gemini-1.5-flash"; API calls fail.');
+    expect(finding!.message).toBe(
+      'Google has shut down Gemini API model "gemini-1.5-flash"; API calls fail. The release notes of 2025-09-29 report these models as shut down; no earlier date was announced, so 2025-09-29 is the date of that notice.',
+    );
     const [version] = byNode(result, 'Gemini 1.5 Pro 002 (version name, not in the dated entry)');
     expect(version).toMatchObject({ model: 'gemini-1.5-pro-002', severity: 'breaking', verification: 'unverified', countsTowardExit: true });
     expect(version!.verificationNote).toContain('assumes the whole 1.5 family shut down');
@@ -195,7 +197,7 @@ describe('Gemini review fixes', () => {
     const [finding] = byNode(result, 'Pro 3 preview (redirected)');
     expect(finding).toMatchObject({ severity: 'behavior-change', verification: 'verified', countsTowardExit: false, replacement: 'gemini-3.1-pro-preview', sources: [DEPRECATIONS, CHANGELOG] });
     expect(finding!.message).toBe(
-      'Google shut down the model behind Gemini API model "gemini-3-pro-preview"; the ID now points to gemini-3.1-pro-preview, so calls still work but get a different model.',
+      'Google shut down the model behind Gemini API model "gemini-3-pro-preview"; the ID now points to gemini-3.1-pro-preview, so calls still work but get a different model. Source: the release notes of 2026-03-09 (Gemini 3 Pro Preview shut down, its ID pointed to gemini-3.1-pro-preview).',
     );
   });
 

@@ -110,6 +110,21 @@
       "title": "n8n Google Gemini node, Image > Generate at n8n@2.41.5 (from node version 1.2 the model defaults to models/gemini-3.1-flash-image-preview)",
       "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/GoogleGemini/actions/image/generate.operation.ts",
       "accessed": "2026-10-06"
+    },
+    "n8n-openai-image": {
+      "title": "n8n OpenAI node, Image > Generate at n8n@2.41.5 (type versions 1 to 2.1 default the model to dall-e-3; from 2.2 the model is a resource locator defaulting to gpt-image-1-mini)",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/v2/actions/image/generate.operation.ts",
+      "accessed": "2026-10-06"
+    },
+    "n8n-openai-image-v1": {
+      "title": "n8n OpenAI node V1 implementation (type versions 1 to 1.8), Image > Generate at n8n@2.41.5 (the model defaults to dall-e-3)",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/v1/actions/image/generate.operation.ts",
+      "accessed": "2026-10-06"
+    },
+    "n8n-gemini-image-edit": {
+      "title": "n8n Google Gemini node, Image > Edit at n8n@2.41.5 (the model defaults to empty, and an empty model falls back to models/gemini-2.5-flash-image-preview in every node version)",
+      "url": "https://github.com/n8n-io/n8n/blob/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/GoogleGemini/actions/image/edit.operation.ts",
+      "accessed": "2026-10-06"
     }
   },
   "n8n": {
@@ -2393,7 +2408,7 @@
         ],
         "dateStatus": "confirmed",
         "redirectsTo": "gemini-3.1-pro-preview",
-        "redirectNote": "The release notes of 2026-03-09 say the Gemini 3 Pro Preview model was shut down and that the gemini-3-pro-preview ID now points to gemini-3.1-pro-preview."
+        "redirectNote": "Source: the release notes of 2026-03-09 (Gemini 3 Pro Preview shut down, its ID pointed to gemini-3.1-pro-preview)."
       },
       {
         "id": "gemini-3.1-flash-lite-preview",
@@ -3169,6 +3184,7 @@
       "model": "claude-2",
       "provider": "anthropic",
       "label": "Anthropic Chat Model 1",
+      "note": "This default is less certain than the others: n8n's source declares the model parameter twice for this version (a block for this version alone and one for versions up to 1.2, whose default is claude-3-5-sonnet-20240620), and which one the editor uses was not verified.",
       "sources": [
         "n8n-lmchat-anthropic"
       ]
@@ -3182,6 +3198,7 @@
       "model": "claude-3-sonnet-20240229",
       "provider": "anthropic",
       "label": "Anthropic Chat Model 1.1",
+      "note": "This default is less certain than the others: n8n's source declares the model parameter twice for this version (a block for this version alone and one for versions up to 1.2, whose default is claude-3-5-sonnet-20240620), and which one the editor uses was not verified.",
       "sources": [
         "n8n-lmchat-anthropic"
       ]
@@ -3231,7 +3248,7 @@
       "sources": [
         "n8n-openai-audio"
       ],
-      "replacement": "gpt-realtime-2.1-mini (OpenAI's replacement; this node only offers tts-1 and tts-1-hd, so call the Realtime API with an HTTP Request node)"
+      "replacement": "gpt-realtime-2.1-mini (OpenAI's replacement; it runs on the Realtime API, which connects over WebSocket or WebRTC, so neither this node, which only offers tts-1 and tts-1-hd, nor an HTTP Request node can call it)"
     },
     {
       "id": "openai-audio-transcribe",
@@ -3270,6 +3287,47 @@
       "replacement": "gpt-live-transcribe or gpt-transcribe (OpenAI's replacements; this node always uses whisper-1, so call the API with an HTTP Request node)"
     },
     {
+      "id": "openai-image-generate",
+      "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 2.1,
+      "when": {
+        "resource": "image",
+        "operation": "generate"
+      },
+      "whenDefaults": {
+        "operation": "generate"
+      },
+      "parameter": "model",
+      "model": "dall-e-3",
+      "provider": "openai",
+      "label": "OpenAI node: resource=image, operation=generate",
+      "sources": [
+        "n8n-openai-image-v1",
+        "n8n-openai-image"
+      ]
+    },
+    {
+      "id": "openai-image-generate-v2.2",
+      "nodeType": "@n8n/n8n-nodes-langchain.openAi",
+      "minTypeVersion": 2.2,
+      "maxTypeVersion": 2.3,
+      "when": {
+        "resource": "image",
+        "operation": "generate"
+      },
+      "whenDefaults": {
+        "operation": "generate"
+      },
+      "parameter": "modelId",
+      "model": "gpt-image-1-mini",
+      "provider": "openai",
+      "label": "OpenAI node: resource=image, operation=generate",
+      "sources": [
+        "n8n-openai-image"
+      ]
+    },
+    {
       "id": "gemini-image-generate",
       "nodeType": "@n8n/n8n-nodes-langchain.googleGemini",
       "minTypeVersion": 1.2,
@@ -3287,6 +3345,23 @@
       "label": "Google Gemini node: resource=image, operation=generate",
       "sources": [
         "n8n-gemini-image"
+      ]
+    },
+    {
+      "id": "gemini-image-edit",
+      "nodeType": "@n8n/n8n-nodes-langchain.googleGemini",
+      "minTypeVersion": 1,
+      "maxTypeVersion": 1.2,
+      "when": {
+        "resource": "image",
+        "operation": "edit"
+      },
+      "parameter": "modelId",
+      "model": "models/gemini-2.5-flash-image-preview",
+      "provider": "gemini",
+      "label": "Google Gemini node: resource=image, operation=edit",
+      "sources": [
+        "n8n-gemini-image-edit"
       ]
     }
   ]

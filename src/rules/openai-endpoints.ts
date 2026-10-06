@@ -3,6 +3,7 @@ import type { OpenAiEndpoint, OpenAiNodeUsage, Registry } from '../registry.js';
 import { sourceUrls } from '../registry.js';
 import { stringLeaves, type StringLeaf } from '../walk.js';
 import type { WorkflowNode } from '../workflows.js';
+import { codeLanguage, stripComments } from './code.js';
 import { CODE_TYPES, HTTP_BODY_TEXT_KEYS, HTTP_WHERE, isOpenAiHttpNode, mentionsOpenAiHost, quotedTokens, rootKey } from './openai.js';
 
 const CODE_WHERE = 'Code node source';
@@ -142,7 +143,10 @@ interface Hit {
 
 export function checkOpenAiEndpoints(node: WorkflowNode, registry: Registry, asOf: string): RuleFinding[] {
   const usageFindings = checkNodeUsages(node, registry, asOf);
-  const leaves = [...stringLeaves(node.parameters)];
+  // Comments don't run: a commented-out `/v1/assistants` call must not keep a migrated Code node failing.
+  const leaves = [...stringLeaves(node.parameters)].map((leaf) =>
+    CODE_TYPES.has(node.type) ? { ...leaf, value: stripComments(leaf.value, codeLanguage(leaf.key)) } : leaf,
+  );
   const isHttp = isOpenAiHttpNode(node);
   const isCode = CODE_TYPES.has(node.type) && (mentionsOpenAiHost(node) || leaves.some((leaf) => /openai-beta/i.test(leaf.value)));
   if (!isHttp && !isCode) return usageFindings;

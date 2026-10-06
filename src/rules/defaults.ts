@@ -27,9 +27,22 @@ function matchesUsage(rule: ModelDefault, node: WorkflowNode): boolean {
   return true;
 }
 
+/**
+ * n8n falls back to the default for a model left empty as well as for one missing from the JSON: "" and an empty
+ * resource locator ({ "__rl": true, "value": "" }) both count as not set.
+ */
+function isUnset(value: unknown): boolean {
+  if (value === undefined || value === null || value === '') return true;
+  if (typeof value === 'object' && !Array.isArray(value) && (value as Record<string, unknown>).__rl === true) {
+    const inner = (value as Record<string, unknown>).value;
+    return inner === undefined || inner === null || inner === '';
+  }
+  return false;
+}
+
 function applies(rule: ModelDefault, node: WorkflowNode): boolean {
   // A model set in the workflow is checked by the model rules instead.
-  return matchesUsage(rule, node) && (rule.fixed === true || node.parameters?.[rule.parameter!] === undefined);
+  return matchesUsage(rule, node) && (rule.fixed === true || isUnset(node.parameters?.[rule.parameter!]));
 }
 
 const CATEGORY = { openai: 'openai-model', anthropic: 'anthropic-model', gemini: 'gemini-model' } as const;
@@ -49,9 +62,10 @@ export function checkModelDefaults(node: WorkflowNode, registry: Registry, index
     if (!applies(rule, node)) continue;
     const version = node.typeVersion ?? 1;
     const location = rule.fixed ? `${rule.label} (always uses ${rule.model})` : `${rule.label}: ${rule.parameter} not set, n8n default ${rule.model}`;
-    const unverifiedNote = rule.fixed
+    const base = rule.fixed
       ? `n8n's node always uses ${rule.model} here (the model is fixed in n8n's code, checked at n8n@2.41.5); the workflow has no model setting. A later n8n release could change that.`
       : `The workflow leaves "${rule.parameter}" unset, so n8n uses its default, which for this node version (${version}) is ${rule.model} at n8n@2.41.5. n8n takes the default from the installed version, so check the node in your n8n.`;
+    const unverifiedNote = rule.note ? `${base} ${rule.note}` : base;
     const options = { unverifiedNote, extraSources: rule.sources, ...(rule.replacement ? { replacement: rule.replacement } : {}) };
     if (rule.provider === 'openai') {
       const match = matchModelId(rule.model, indexes.openai);

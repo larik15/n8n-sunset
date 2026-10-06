@@ -55,12 +55,13 @@
       "position": [1000, 0]
     },
     {
-      "parameters": { "model": "claude-2.1", "options": { "baseURL": "https://gateway.example.com/anthropic" } },
+      "parameters": { "model": "claude-2.1" },
       "id": "7",
       "name": "Behind a gateway",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1,
-      "position": [1200, 0]
+      "position": [1200, 0],
+      "credentials": { "anthropicApi": { "id": "9", "name": "Company AI gateway" } }
     },
     {
       "parameters": { "model": "anthropic.claude-3-5-sonnet-20240620-v1:0" },

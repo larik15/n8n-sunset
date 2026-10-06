@@ -106,10 +106,11 @@ function longestWord(cells: Cell[][], i: number): number {
 function fitWidths(columns: Column[], cells: Cell[][], total: number): number[] | undefined {
   const widths = columns.map((col, i) => {
     const natural = Math.max(displayWidth(col.header), ...cells.map((row) => Math.max(0, ...row[i]!.map((p) => displayWidth(p.text)))));
-    return Math.max(col.min, Math.min(col.max, Math.max(natural, longestWord(cells, i))));
+    // A word longer than the column's max widens the column instead of being split.
+    return Math.max(col.min, longestWord(cells, i), Math.min(col.max, natural));
   });
   // Columns shrink to their minimum, but never below their longest word.
-  const floor = columns.map((col, i) => Math.min(widths[i]!, Math.max(col.min, longestWord(cells, i))));
+  const floor = columns.map((col, i) => Math.max(col.min, longestWord(cells, i)));
   const available = total - GAP * (columns.length - 1);
   while (widths.reduce((a, b) => a + b, 0) > available) {
     let widest = -1;
@@ -201,7 +202,7 @@ function renderStacked(findings: Finding[], c: Colors, width: number): string[] 
 /** Upcoming first, then already past, then the n8n upgrade grouped so each heading reads as the label. */
 const SECTIONS: { title: (upgrade: string) => string; pick: (f: Finding) => boolean }[] = [
   { title: () => 'Upcoming shutdowns', pick: (f) => f.status === 'upcoming' },
-  { title: () => 'Already shut down', pick: (f) => f.status === 'past' },
+  { title: () => 'Past shutdown dates', pick: (f) => f.status === 'past' },
   { title: (v) => `Breaks on upgrade to n8n ${v}`, pick: (f) => f.status === 'on-upgrade' && f.severity === 'breaking' },
   { title: (v) => `Changes on upgrade to n8n ${v}`, pick: (f) => f.status === 'on-upgrade' && f.severity === 'behavior-change' },
   { title: (v) => `Also on upgrade to n8n ${v}`, pick: (f) => f.status === 'on-upgrade' && (f.severity === 'warning' || f.severity === 'info') },
@@ -249,6 +250,7 @@ export function renderTable(result: ScanResult, registry: Registry, load: LoadRe
     `window ${result.windowDays} days`,
     ...(result.targets?.length ? [`target n8n ${result.targets.join(', ')}`] : []),
     ...(result.skipRules?.length ? [`skipping ${result.skipRules.join(', ')}`] : []),
+    ...(result.ignoreModels?.length ? [`ignoring model ${result.ignoreModels.join(', ')}`] : []),
   ];
   out.push(...headerLines(segments, options.width, c), '');
 
@@ -346,6 +348,7 @@ export function toJsonReport(
     windowDays: result.windowDays,
     targets: result.targets ?? [],
     skipRules: result.skipRules ?? [],
+    ignoreModels: result.ignoreModels ?? [],
     exitCode: meta.exitCode,
     summary: { ...result.summary, filesSkipped: load.skipped.length, fileErrors: load.errors.length, symlinksNotFollowed: load.symlinks.length },
     registry: {

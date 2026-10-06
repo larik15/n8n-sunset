@@ -7,9 +7,9 @@ All notable changes to n8n-sunset. The format follows [Keep a Changelog](https:/
 ### Possibly breaking for JSON consumers and CI
 
 - Two new `category` values, `anthropic-model` and `gemini-model`, and new rule IDs `anthropic/model-retirement` and `gemini/model-shutdown`. Code that switches over categories without a default case needs updating.
-- Exit code 1 now also covers Anthropic and Gemini findings, so a pipeline that was green on 0.1.x can turn red. Use `--skip-rule` (below) to leave a rule out while you migrate.
-- A date finding can now be a `behavior-change` (a redirected Gemini ID) or a `warning` (a Gemini date that has passed but nothing confirms). The JSON report has a new top-level `skipRules` field.
-- The registry warning now appears when the bundled data is more than 14 days older than `--as-of` (was 30). The failure threshold stays at 90 days.
+- Exit code 1 now also covers Anthropic and Gemini findings, so a pipeline that was green on 0.1.x can turn red. Use `--skip-rule` or `--ignore-model` (below) to leave a rule or a model out while you migrate.
+- A date finding can now be a `behavior-change` (a redirected Gemini ID) or a `warning` (a Gemini date that has passed but nothing confirms). The JSON report has new top-level `skipRules` and `ignoreModels` fields.
+- The registry warning now appears when the bundled data is more than 14 days older than `--as-of` (was 30), and reads "registry data from <date> (N days old); newer shutdowns may be missing". The failure threshold stays at 90 days.
 
 ### Added
 
@@ -24,23 +24,24 @@ All notable changes to n8n-sunset. The format follows [Keep a Changelog](https:/
 - **Where the new rules look:**
   - the Anthropic and Google Gemini nodes, and so AI Agent model sub-nodes;
   - HTTP Request nodes calling `api.anthropic.com` or `generativelanguage.googleapis.com` (URL path, body, parameters);
-  - OpenAI-compatible nodes whose `options.baseURL` points at either API;
+  - an OpenAI Chat Model version 1 whose `options.baseURL` points at either API (later versions set the URL in the credential, which a workflow doesn't contain);
   - Code nodes, including Gemini REST URLs in string literals;
   - `model` fields on other nodes (warnings).
 - **Models n8n uses without naming them:**
-  - an Anthropic Chat Model left at its default (per node version);
-  - the OpenAI node's text to speech (default `tts-1`) and Transcribe/Translate (always `whisper-1`);
-  - the Google Gemini node's image generation (default `gemini-3.1-flash-image-preview`).
-  These are reported as unverified, with a replacement note when OpenAI's suggestion can't be selected in that node.
+  - an Anthropic Chat Model left at its default (per node version; the 1 and 1.1 defaults are marked as less certain);
+  - the OpenAI node's text to speech (default `tts-1`), Transcribe/Translate (always `whisper-1`), and image generation (default `dall-e-3` up to node version 2.1, `gpt-image-1-mini` from 2.2);
+  - the Google Gemini node's image generation (default `gemini-3.1-flash-image-preview`) and image editing (falls back to `gemini-2.5-flash-image-preview`).
+  A model left empty, including an empty resource locator, counts as left at its default. These findings are unverified, with a replacement note when OpenAI's suggestion can't be used from that node (text to speech: its replacement runs on the Realtime API, which needs WebSocket or WebRTC).
 - **Replacement chains:** when a provider's suggested replacement is itself shut down or goes within the window, the report says so and names the next model, for all providers.
-- `--skip-rule <rule ID or category>` to leave out a rule; repeatable.
+- `--skip-rule <rule ID or category>` to leave out a rule, and `--ignore-model <id>` to leave out one model wherever it is found (for example old IDs kept in a Code node's migration map); both repeatable.
 - A warning when a `--registry` file has no Anthropic or Gemini section (written for 0.1.x).
 - Exported `buildProviderIndex`, `matchProviderModel`, and the `ProviderModel`, `ProviderModels` and `ModelDefault` types.
 
 ### Changed
 
-- **Code nodes:** comments are now really ignored when looking for model IDs (JavaScript `//` and `/* */`, Python `#`), for OpenAI too, as the README already said. A Code node that calls Vertex AI or Bedrock gets warnings instead of breaking findings.
-- **Table layout:** the table no longer splits a model ID or host name across lines. When the terminal is too narrow for that, findings are printed as blocks.
+- **Code nodes:** comments are now really ignored when looking for model IDs (JavaScript `//` and `/* */`, Python `#`), for OpenAI too, as the README already said. A Code node that uses a Vertex AI or Bedrock client, outside comments, gets warnings instead of breaking findings. Endpoint checks ignore comments too.
+- **Table layout:** the table no longer splits a model ID or host name across lines; a column widens to fit its longest word. When the terminal is too narrow for that, findings are printed as blocks. The "Already shut down" section is now "Past shutdown dates".
+- **Registry notes in findings:** a model entry's note (for example that a Gemini 1.5 date is the date of the notice that reported the shutdown) and the source of a redirect are added to the finding's message.
 - **OpenAI data:** re-checked against the current deprecations page. No date or replacement changed, and 7 models announced on 2026-10-01 were added (`gpt-5.3-codex`, `gpt-5.4-nano` and `gpt-5.1` on 2027-04-01; `tts-1`, `tts-1-hd` and the two `gpt-4o-mini-tts` snapshots on 2027-01-06). `gpt-4-1106-preview`, listed under two dates, now uses the newer announcement (2026-10-23) and stays unverified.
 - The report footer names the source of each provider's dates (only for sections the registry has).
 - Registry version 2026-10-06.

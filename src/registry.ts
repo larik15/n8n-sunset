@@ -110,6 +110,8 @@ export interface ModelDefault {
   label: string;
   /** Replaces the registry's replacement text, e.g. when the suggested model can't be selected in this node. */
   replacement?: string;
+  /** Added to the finding's verification note, e.g. why the default itself is uncertain. */
+  note?: string;
   sources: string[];
 }
 

@@ -327,7 +327,8 @@ describe('legacy fine-tunes with a custom suffix', () => {
 describe('OpenAI node defaults and fixed models', () => {
   const result = scanFixture('rules/openai-review-fixes.json', { asOf: '2026-10-06' });
   const AUDIO = 'https://github.com/n8n-io/n8n/tree/a9c858b4d95f8e09b1f26b608374f211148a2cc4/packages/@n8n/nodes-langchain/nodes/vendors/OpenAi';
-  const TTS_NOTE = "gpt-realtime-2.1-mini (OpenAI's replacement; this node only offers tts-1 and tts-1-hd, so call the Realtime API with an HTTP Request node)";
+  const TTS_NOTE =
+    "gpt-realtime-2.1-mini (OpenAI's replacement; it runs on the Realtime API, which connects over WebSocket or WebRTC, so neither this node, which only offers tts-1 and tts-1-hd, nor an HTTP Request node can call it)";
 
   it('flags text to speech left at its default model, with a replacement that says the node cannot use it', () => {
     const [finding] = byNode(result, 'Text to speech (untouched)');
