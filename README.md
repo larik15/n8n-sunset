@@ -517,6 +517,10 @@ npm run build
 
 `npm publish` runs the typecheck and the tests first (`prepublishOnly`), then builds (`prepack`).
 
+## Need help?
+
+Need your workflows fixed before the model shutdowns or the n8n 3.0 upgrade? I do fixed-price migrations, from $150. Email larik2174@gmail.com with your workflow export.
+
 ## License
 
 [MIT](LICENSE)
