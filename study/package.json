@@ -1,0 +1,9 @@
+{
+  "name": "n8n-sunset-study",
+  "private": true,
+  "description": "Scripts behind STUDY.md: collect public n8n workflow exports from GitHub and scan them with n8n-sunset. Contains no data.",
+  "type": "module",
+  "dependencies": {
+    "n8n-sunset": "0.2.0"
+  }
+}

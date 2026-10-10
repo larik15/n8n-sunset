@@ -25,3 +25,7 @@ creds.json
 
 # Local review material
 /REVIEW_BUNDLE.md
+
+# Study scripts: dependencies and collected data stay out of the repo
+/study/node_modules/
+/study-data/

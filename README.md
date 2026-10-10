@@ -4,6 +4,8 @@
 [![npm version](https://img.shields.io/npm/v/n8n-sunset)](https://www.npmjs.com/package/n8n-sunset)
 [![License: MIT](https://img.shields.io/github/license/larik15/n8n-sunset)](LICENSE)
 
+[12.7% of 11,075 public n8n workflows on GitHub hit a dated model shutdown; 23.6% break on n8n 3.0.](STUDY.md)
+
 Scan n8n workflows for what is about to break:
 
 - **OpenAI model shutdowns**: deprecated model IDs in OpenAI nodes, in HTTP Request nodes calling `api.openai.com`, and in Code node source.
